@@ -1,83 +1,12 @@
 <!DOCTYPE html>
-<html lang="ru" class="bg-[#008080]"> <head>
+<html lang="ru" class="bg-[#008080]">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog Page 95</title>
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans&display=swap" rel="stylesheet">
-    <script src="src/main.ts" type="module"></script>
-</head>
-
-<body class="font-sans text-[12px] p-4">
-
-    <header class="bg-win-gray shadow-win-outset p-1 mb-6 flex items-center gap-2">
-        <button class="bg-win-gray shadow-win-outset px-3 py-1 font-bold flex items-center gap-2 hover:active:shadow-win-inset">
-            <img src="img/cover.jpg" class="w-4 h-4 rounded-sm" alt="Start">
-            Пуск
-        </button>
-        <div class="h-6 w-[2px] bg-win-border-dark shadow-[1px_0_0_#fff]"></div>
-        <h1 class="text-sm px-2 truncate">Блог Мистера Денискиса</h1>
-    </header>
-
-    <main class="grid grid-cols-1 md:grid-cols-12 gap-6">
-        
-        <section class="md:col-span-8 bg-win-gray shadow-win-outset">
-            <div class="bg-gradient-to-r from-win-blue to-win-blue-light p-1 flex justify-between items-center text-white px-2">
-                <span class="font-bold">Welcome.exe</span>
-                <div class="flex gap-1">
-                    <button class="bg-win-gray text-black shadow-win-outset w-4 h-4 flex items-center justify-center text-[10px]">_</button>
-                    <button class="bg-win-gray text-black shadow-win-outset w-4 h-4 flex items-center justify-center text-[10px]">X</button>
-                </div>
-            </div>
-            
-            <div class="p-4 bg-white m-1 shadow-win-inset min-h-[200px]">
-                <p class="mb-4">Добро пожаловать в систему!</p>
-                <p>Здесь вы найдете много интересной информации.</p>
-                
-                <div class="mt-8 border-t border-win-border-dark pt-4">
-                    <ul id="post-list" class="space-y-2">
-                        </ul>
-                </div>
-            </div>
-        </section>
-
-        <aside class="md:col-span-4 space-y-4">
-            <div class="bg-win-gray shadow-win-outset p-1">
-                <div class="bg-win-border-dark p-1 text-white px-2 font-bold mb-2 uppercase tracking-wider text-[10px]">
-                    Поиск
-                </div>
-                <div class="p-2">
-                    <form class="flex flex-col gap-2">
-                        <input type="text" placeholder="Введите запрос..." 
-                            class="bg-white shadow-win-inset p-2 outline-none focus:ring-1 ring-win-blue">
-                        <button type="submit" class="bg-win-gray shadow-win-outset py-1 hover:active:shadow-win-inset">
-                            Найти
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-            <fieldset class="border-2 border-win-border-light shadow-[1px_1px_0_#808080] p-4">
-                <legend class="px-2 font-bold">Теги</legend>
-                <div id="tags-container" class="flex flex-wrap gap-2 text-blue-800 underline">
-                    </div>
-            </fieldset>
-        </aside>
-    </main>
-
-    <div id="post-modal-overlay" class="fixed inset-0 bg-black/40 flex items-center justify-center hidden z-50">
-        <div class="bg-win-gray shadow-win-outset w-[400px] p-1">
-            <div class="bg-win-blue p-1 flex justify-between items-center text-white px-2 mb-2">
-                <span>Новая запись</span>
-                <a href="#" class="bg-win-gray text-black shadow-win-outset w-4 h-4 flex items-center justify-center text-[10px]">&times;</a>
-            </div>
-            <div class="p-4 space-y-4 text-center">
-                <p>Вы уверены, что хотите опубликовать этот пост?</p>
-                <div class="flex justify-center gap-4">
-                    <button class="bg-win-gray shadow-win-outset px-6 py-1 hover:active:shadow-win-inset">Да</button>
-                    <button class="bg-win-gray shadow-win-outset px-6 py-1 hover:active:shadow-win-inset">Нет</button>
-                </div>
-            </div>
-        </div>
-    </div>
-  </body>
+    </head>
+<body class="font-sans text-[12px] p-4 text-black">
+    <script src="/src/main.ts" type="module"></script>
+</body>
 </html>
