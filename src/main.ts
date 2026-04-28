@@ -14,8 +14,6 @@ const initApp = () => {
         </main>
         <div id="post-modal-overlay" class="fixed inset-0 bg-black/40 flex items-center justify-center hidden z-50">...</div>
     `;
-
-    console.log("Приложение загружено");
 };
 
 document.addEventListener('DOMContentLoaded', initApp);
