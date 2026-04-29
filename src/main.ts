@@ -45,12 +45,13 @@ const initApp = () => {
     `;
 
     const modal = document.getElementById('post-modal-overlay')!;
-    const openBtn = document.querySelector('.bg-win-gray.shadow-win-outset.px-3.py-1.font-bold');
+    const createBtn = document.getElementById('btn-create-post');
     
     const toggleModal = (show: boolean) => {
         modal.classList.toggle('hidden', !show);
     };
 
+    createBtn?.addEventListener('click', () => toggleModal(true));
     document.getElementById('close-modal')?.addEventListener('click', () => toggleModal(false));
     document.getElementById('cancel-post')?.addEventListener('click', () => toggleModal(false));
 
@@ -61,30 +62,27 @@ const initApp = () => {
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(form);
-        
-        // Извлекаем данные из полей
-        const title = formData.get('title') as string;
-        const content = formData.get('content') as string;
-        const imageInput = form.querySelector('input[name="image"]') as HTMLInputElement;
-        
-        let imageToSave: string | null = null;
 
-        // Если пользователь выбрал файл, конвертируем его в строку Base64
+        const tagsRaw = formData.get('tags') as string;
+        const tagsArray = tagsRaw 
+            ? tagsRaw.split(',').map(tag => tag.trim()).filter(tag => tag !== "") 
+            : [];
+
+        const imageInput = form.querySelector('input[name="imageFile"]') as HTMLInputElement;
+        const imageLink = formData.get('imageLink') as string;
+        
+        let finalImage: string | null = imageLink || null;
+
         if (imageInput.files && imageInput.files[0]) {
-            imageToSave = await convertFileToBase64(imageInput.files[0]);
-        } else {
-            // Если вставлена просто ссылка (URL), берем её как текст
-            imageToSave = formData.get('image') as string || null;
+            finalImage = await convertFileToBase64(imageInput.files[0]);
         }
 
-        // Создаем экземпляр, передавая все параметры в конструктор, как ты и настроил
-        // Порядок: title, content, authorId, tags (пустой массив по дефолту), image
         const newPostInstance = new Post(
-            title,
-            content,
-            'admin_1',
-            [], 
-            imageToSave
+            formData.get('title') as string,
+            formData.get('content') as string,
+            'user_95',
+            tagsArray,
+            finalImage
         );
 
         const finalPost = newPostInstance.createNewPost();
@@ -93,11 +91,9 @@ const initApp = () => {
         savePostsToLocalStorage();
         updatePostList();
 
-        document.getElementById('post-modal-overlay')?.classList.add('hidden');
+        toggleModal(false);
         form.reset();
     });
-
-    openBtn?.addEventListener('click', () => toggleModal(true));
 };
 
 const convertFileToBase64 = (file: File): Promise<string> => {

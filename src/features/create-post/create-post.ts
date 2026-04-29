@@ -13,8 +13,19 @@ export const renderCreatePostForm = (): string => {
             </div>
 
             <div class="flex flex-col gap-1">
-                <label class="font-bold">Ссылка на картинку:</label>
-                <input type="text" name="image" placeholder="https://..." class="bg-white shadow-win-inset p-1 outline-none">
+                <label class="font-bold">Изображение:</label>
+                <div class="flex flex-col gap-2">
+                    <input type="text" name="imageLink" placeholder="Вставьте ссылку на картинку..." class="bg-white shadow-win-inset p-1 outline-none text-[12px]">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px]">или выберите файл:</span>
+                        <input type="file" name="imageFile" accept="image/*" class="text-[10px]">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="font-bold">Хештеги (через запятую):</label>
+                <input type="text" name="tags" placeholder="win95, dev, blog" class="bg-white shadow-win-inset p-1 outline-none">
             </div>
 
             <div class="flex flex-col gap-1">
