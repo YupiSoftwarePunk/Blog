@@ -85,7 +85,8 @@ export const TextFormatter = {
             if (part.type === 'code') {
                 const highlightedCode = TextFormatter.syntaxHighlight(part.content);
                 resultHtml += `<pre class="code-block shadow-win-inset p-2 bg-black text-white overflow-x-auto" data-lang="${part.lang}"><code>${highlightedCode}</code></pre>`;
-            } else {
+            } 
+            else {
                 let textContent = keywordHighlighter(part.content);
                 textContent = textContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                 textContent = textContent.replace(/\*(.*?)\*/g, '<em>$1</em>');
@@ -101,7 +102,7 @@ export const TextFormatter = {
 
                     if (ulMatch || olMatch) {
                         const currentType = ulMatch ? 'ul' : 'ol';
-                        const content = ulMatch ? ulMatch[1] : olMatch[1];
+                        const content = ulMatch?.[1] ?? olMatch?.[1] ?? '';
 
                         if (!inList || listType !== currentType) {
                             if (inList) processedLines.push(`</${listType}>`);
@@ -110,7 +111,8 @@ export const TextFormatter = {
                             listType = currentType;
                         }
                         processedLines.push(`<li>${content}</li>`);
-                    } else {
+                    } 
+                    else {
                         if (inList) {
                             processedLines.push(`</${listType}>`);
                             inList = false;

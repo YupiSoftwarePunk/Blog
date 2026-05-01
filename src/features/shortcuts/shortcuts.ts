@@ -108,3 +108,37 @@ export function initKeyboardShortcuts(storage: SaveData): void {
         }
     }, true);
 }
+
+
+export function setupPostInteractions(storage: SaveData) {
+    const postList = document.querySelector('.posts-container');
+    if (!postList) return;
+
+    const refreshPostAttributes = () => {
+        const posts = document.querySelectorAll('.post-item');
+        posts.forEach(post => {
+            if (!post.hasAttribute('tabindex')) {
+                post.setAttribute('tabindex', '0');
+                post.classList.add('focus:outline-none', 'focus:ring-2', 'focus:ring-blue-800');
+            }
+        });
+    };
+
+    refreshPostAttributes();
+
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+        const activeElement = document.activeElement as HTMLElement;
+        
+        if (activeElement?.classList.contains('post-item')) {
+            const postId = activeElement.dataset.id;
+
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (postId) {
+                    showConfirmDelete(postId, activeElement, storage);
+                }
+            }
+        }
+    });
+
+    return { refreshPostAttributes };
+}

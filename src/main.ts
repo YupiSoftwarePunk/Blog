@@ -5,37 +5,54 @@ import { renderSidebar } from './widgets/sidebar/sidebar.ts';
 import { renderCreatePostForm } from './features/create-post/create-post.ts';
 import { renderPostCard } from './entities/post/post-card.ts';
 import { Post } from './entities/post/post.ts';
+
 import { SaveData } from './shared/api/storage';
+import { debounce } from './shared/lib/utils.ts';
+import { initFormatting } from './features/formatting/formatterLogic.ts';
+import { setupPostInteractions } from './features/shortcuts/shortcuts.ts';
+import { showConfirmDelete } from './features/delete-post/deletePost.ts';
 
 const blogStorage = new SaveData('Blog_');
 
+let refreshAttributes: () => void = () => {};
+
 let allPosts: any[] = [];
 
-const updatePostList = () => {
-    const listElement = document.getElementById('post-list');
-    if (listElement) {
-        listElement.innerHTML = allPosts.map(post => renderPostCard(post)).join('');
-    }
+
+const syncFormatting = () => {
+    const postElements = document.querySelectorAll('.post-card'); 
+    const postsData = Array.from(postElements).map(el => ({
+        element: el as HTMLElement,
+        content: (el as HTMLElement).querySelector('.post-content')?.textContent || '',
+        originalTitle: (el as HTMLElement).querySelector('.post-title')?.textContent || 'Без названия'
+    }));
+    
+    initFormatting(postsData);
 };
 
 const savePostsToLocalStorage = () => {
     blogStorage.set('dynamic_posts', allPosts);
 };
 
+const updatePostList = () => {
+    const listElement = document.getElementById('post-list');
+    if (listElement) {
+        listElement.innerHTML = allPosts.map(post => renderPostCard(post)).join('');
+
+        refreshAttributes(); 
+        syncFormatting();
+    }
+};
+
+
 const initApp = () => {
     const savedPosts = blogStorage.get<any[]>('dynamic_posts');
-    
-    if (savedPosts && savedPosts.length > 0) {
-        allPosts = savedPosts;
-    } 
-    else {
-        console.log('No saved posts found, initializing with default data.');
-    }
+    if (savedPosts) allPosts = savedPosts;
 
     const root = document.body;
     root.innerHTML = `
         ${renderHeader()}
-        <main class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <main class="grid grid-cols-1 md:grid-cols-12 gap-6 p-4">
             ${renderPostList()}
             ${renderSidebar()}
         </main>
@@ -44,12 +61,14 @@ const initApp = () => {
         </div>
     `;
 
+    const interactions = setupPostInteractions(blogStorage);
+    if (interactions) {
+        refreshAttributes = interactions.refreshPostAttributes;
+    }
+
     const modal = document.getElementById('post-modal-overlay')!;
     const createBtn = document.getElementById('btn-create-post');
-    
-    const toggleModal = (show: boolean) => {
-        modal.classList.toggle('hidden', !show);
-    };
+    const toggleModal = (show: boolean) => modal.classList.toggle('hidden', !show);
 
     createBtn?.addEventListener('click', () => toggleModal(true));
     document.getElementById('close-modal')?.addEventListener('click', () => toggleModal(false));
@@ -57,23 +76,42 @@ const initApp = () => {
 
     updatePostList();
 
+    const searchInput = document.getElementById('blog-search') as HTMLInputElement;
+    if (searchInput) {
+        const handleSearch = debounce((e: Event) => {
+            const query = (e.target as HTMLInputElement).value.toLowerCase();
+            const postCards = document.querySelectorAll('.post-card');
+            
+            postCards.forEach(card => {
+                const text = card.textContent?.toLowerCase() || '';
+                (card as HTMLElement).style.display = text.includes(query) ? 'block' : 'none';
+            });
+        }, 400);
+        searchInput.addEventListener('input', handleSearch);
+    }
+
+    document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        const deleteBtn = target.closest('.btn-delete-post');
+        
+        if (deleteBtn) {
+            const postElement = deleteBtn.closest('.post-card') as HTMLElement;
+            const postId = postElement?.dataset.id;
+            if (postId && postElement) {
+                showConfirmDelete(postId, postElement, blogStorage);
+            }
+        }
+    });
+
     const form = document.getElementById('create-post-form') as HTMLFormElement;
-    
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(form);
 
-        const tagsRaw = formData.get('tags') as string;
-        const tagsArray = tagsRaw 
-            ? tagsRaw.split(',').map(tag => tag.trim()).filter(tag => tag !== "") 
-            : [];
-
         const imageInput = form.querySelector('input[name="imageFile"]') as HTMLInputElement;
-        const imageLink = formData.get('imageLink') as string;
-        
-        let finalImage: string | null = imageLink || null;
+        let finalImage = (formData.get('imageLink') as string) || null;
 
-        if (imageInput.files && imageInput.files[0]) {
+        if (imageInput.files?.[0]) {
             finalImage = await convertFileToBase64(imageInput.files[0]);
         }
 
@@ -81,27 +119,23 @@ const initApp = () => {
             formData.get('title') as string,
             formData.get('content') as string,
             'user_95',
-            tagsArray,
+            (formData.get('tags') as string || '').split(',').map(t => t.trim()).filter(t => t),
             finalImage
         );
 
-        const finalPost = newPostInstance.createNewPost();
-        
-        allPosts.unshift(finalPost);
+        allPosts.unshift(newPostInstance.createNewPost());
         savePostsToLocalStorage();
         updatePostList();
-
         toggleModal(false);
         form.reset();
     });
 };
 
 const convertFileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (error) => reject(error);
     });
 };
 
@@ -109,8 +143,9 @@ const convertFileToBase64 = (file: File): Promise<string> => {
     const post = allPosts.find(p => p.id === id);
     if (post) {
         post.views = (parseInt(post.views) + 1).toString();
-        const likeCounter = document.getElementById(`likes-${id}`);
-        if (likeCounter) likeCounter.innerText = post.views;
+        const counter = document.getElementById(`likes-${id}`);
+        if (counter) counter.innerText = post.views;
+        savePostsToLocalStorage();
     }
 };
 
