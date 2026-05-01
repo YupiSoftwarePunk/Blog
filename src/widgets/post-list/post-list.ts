@@ -2,7 +2,7 @@ export const renderPostList = (): string => {
     return `
     <section class="md:col-span-8 bg-win-gray shadow-win-outset">
         <div class="bg-gradient-to-r from-win-blue to-win-blue-light p-1 flex justify-between items-center text-white px-2">
-            <span class="font-bold">Feed.exe</span>
+            <span class="font-bold">List.exe</span>
             <div class="flex gap-1">
                 <button id="btn-create-post" class="bg-win-gray text-black shadow-win-outset px-2 h-4 flex items-center justify-center text-[10px] font-bold mr-4">
                     [*] Создать пост
