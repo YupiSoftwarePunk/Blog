@@ -1,18 +1,21 @@
 export const renderSidebar = (): string => {
     return `
-    <aside class="md:col-span-4 space-y-4">
-        <div class="bg-win-gray shadow-win-outset p-1">
-            <div class="bg-win-border-dark p-1 text-white px-2 font-bold mb-2 uppercase tracking-wider text-[10px]">Поиск</div>
-            <div class="p-2">
-                <form class="flex flex-col gap-2">
-                    <input type="text" placeholder="Введите запрос..." class="bg-white shadow-win-inset p-2 outline-none focus:ring-1 ring-win-blue">
-                    <button type="submit" class="bg-win-gray shadow-win-outset py-1 hover:active:shadow-win-inset">Найти</button>
-                </form>
-            </div>
+    <aside class="md:col-span-4 space-y-10">
+        <div class="bg-blue-300 border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <h3 class="font-black text-xl uppercase mb-4 italic">Найти инфу</h3>
+            <form class="flex flex-col gap-4">
+                <input id="blog-search" type="text" placeholder="Поиск по блогу..." 
+                    class="bg-white border-4 border-black p-3 font-bold outline-none focus:bg-yellow-100 placeholder:text-black/50">
+                <button type="submit" class="bg-black text-white py-3 font-black uppercase hover:bg-white hover:text-black border-4 border-black transition-colors">
+                    Искать!
+                </button>
+            </form>
         </div>
-        <fieldset class="border-2 border-win-border-light shadow-[1px_1px_0_#808080] p-4">
-            <legend class="px-2 font-bold">Теги</legend>
-            <div id="tags-container" class="flex flex-wrap gap-2 text-blue-800 underline"></div>
-        </fieldset>
+
+        <div class="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <h3 class="font-black text-xl uppercase mb-4">Облако тегов</h3>
+            <div id="tags-container" class="flex flex-wrap gap-3 font-bold uppercase text-sm">
+                </div>
+        </div>
     </aside>`;
 };
