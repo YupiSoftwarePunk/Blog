@@ -155,4 +155,20 @@ const convertFileToBase64 = (file: File): Promise<string> => {
     }
 };
 
+(window as any).addComment = (id: number) => {
+    const input = document.getElementById(`input-comment-${id}`) as HTMLInputElement;
+    const text = input.value.trim();
+
+    if (text) {
+        const post = allPosts.find(p => p.id === id);
+        if (post) {
+            if (!post.comments) post.comments = [];
+            post.comments.push(text);
+
+            savePostsToLocalStorage();
+            updatePostList();
+        }
+    }
+};
+
 document.addEventListener('DOMContentLoaded', initApp);

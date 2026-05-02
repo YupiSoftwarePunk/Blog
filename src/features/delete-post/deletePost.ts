@@ -2,24 +2,28 @@ import { SaveData } from "../../shared/api/storage";
 
 export function showConfirmDelete(postId: string | number, postElement: HTMLElement, storage: SaveData): void {
     const confirmOverlay = document.createElement('div');
-    confirmOverlay.className = 'delete-overlay fixed inset-0 bg-black/70 flex justify-center items-center z-[10000]';
-    confirmOverlay.setAttribute('role', 'alertdialog');
-    confirmOverlay.setAttribute('aria-modal', 'true');
+    confirmOverlay.className = 'delete-overlay fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center z-[10000] p-4';
 
     const dialog = document.createElement('div');
-    dialog.className = 'bg-win-gray border-2 border-white shadow-win-outset p-4 max-w-sm w-full text-black';
+    dialog.className = 'bg-white border-4 border-black p-0 max-w-sm w-full shadow-[12px_12px_0px_0px_rgba(239,68,68,1)]';
     dialog.innerHTML = `
-        <div class="flex justify-between items-center bg-blue-900 px-2 py-1 mb-4">
-            <span class="text-white font-bold text-xs">Confirm File Delete</span>
-            <button class="bg-win-gray border border-black text-[10px] px-1" onclick="this.closest('.delete-overlay').remove()">X</button>
+        <div class="bg-red-500 border-b-4 border-black p-2 flex justify-between items-center">
+            <span class="text-white font-black text-sm uppercase italic">Внимание!</span>
+            <button class="bg-white border-2 border-black w-6 h-6 flex items-center justify-center font-bold text-xs" onclick="this.closest('.delete-overlay').remove()">✕</button>
         </div>
-        <div class="flex gap-4 items-start mb-4">
-            <div class="bg-yellow-400 p-2 border-2 border-black font-bold text-xl">!</div>
-            <p class="text-xs">Вы уверены, что хотите навсегда удалить пост №${postId}?</p>
-        </div>
-        <div class="flex gap-2 justify-end">
-            <button id="confirm-yes" class="bg-win-gray border-b-2 border-r-2 border-black border-t border-l border-white px-4 py-1 text-xs active:shadow-win-inset">Да</button>
-            <button id="confirm-no" class="bg-win-gray border-b-2 border-r-2 border-black border-t border-l border-white px-4 py-1 text-xs active:shadow-win-inset">Отмена</button>
+        <div class="p-6">
+            <div class="flex gap-4 items-center mb-6">
+                <div class="bg-yellow-400 border-4 border-black w-12 h-12 flex items-center justify-center font-black text-2xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">!</div>
+                <p class="font-bold text-sm leading-tight uppercase">Удалить пост №${postId} безвозвратно?</p>
+            </div>
+            <div class="flex gap-3">
+                <button id="confirm-yes" class="flex-1 bg-black text-white py-2 font-black uppercase border-4 border-black shadow-[4px_4px_0px_0px_rgba(239,68,68,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
+                    Да, удаляй
+                </button>
+                <button id="confirm-no" class="flex-1 bg-white border-4 border-black py-2 font-black uppercase hover:bg-gray-100 transition-all">
+                    Нет, стоп
+                </button>
+            </div>
         </div>
     `;
 
@@ -29,20 +33,15 @@ export function showConfirmDelete(postId: string | number, postElement: HTMLElem
     const yesBtn = dialog.querySelector('#confirm-yes') as HTMLButtonElement;
     const noBtn = dialog.querySelector('#confirm-no') as HTMLButtonElement;
 
-    yesBtn.focus();
-
     noBtn.onclick = () => confirmOverlay.remove();
-    
     yesBtn.onclick = () => {
-        postElement.remove();
-
-        const currentDynamic = storage.get<any[]>('dynamic_posts') || [];
-        const updatedDynamic = currentDynamic.filter(p => String(p.id) !== String(postId));
-        storage.set('dynamic_posts', updatedDynamic);
-
-        (window as any).initTags?.();
-
-        confirmOverlay.remove();
-        console.log(`Пост ${postId} удален`);
+        postElement.classList.add('translate-x-full', 'opacity-0'); // Эффект вылета
+        setTimeout(() => {
+            postElement.remove();
+            const currentDynamic = storage.get<any[]>('dynamic_posts') || [];
+            const updatedDynamic = currentDynamic.filter(p => String(p.id) !== String(postId));
+            storage.set('dynamic_posts', updatedDynamic);
+            confirmOverlay.remove();
+        }, 300);
     };
 }
