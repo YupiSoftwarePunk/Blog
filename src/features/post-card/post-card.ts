@@ -4,7 +4,8 @@ export const renderPostCard = (post: any): string => {
     return `
     <li class="focusable-post post-card bg-white border-4 border-black p-2 mb-4 outline-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] 
         transition-all focus:ring-4 focus:ring-purple-600 focus:shadow-none focus:translate-x-1 focus:translate-y-1" 
-        data-id="${post.id}" 
+        data-id="${post.id}"
+        data-tags="${post.tags ? post.tags.join(',') : ''}"
         tabindex="0">
         <div class="flex justify-between items-start mb-4">
             <h3 class="post-title font-black text-xl uppercase italic">${post.title}</h3>
