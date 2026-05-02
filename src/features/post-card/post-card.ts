@@ -1,3 +1,5 @@
+import { renderCommentSection } from '../comment/postComment.ts'; 
+
 export const renderPostCard = (post: any): string => {
     return `
     <li class="focusable-post post-card bg-white border-4 border-black p-5 mb-8 outline-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] 
@@ -32,5 +34,7 @@ export const renderPostCard = (post: any): string => {
                 💬 МНЕНИЕ
             </button>
         </div>
+
+        ${renderCommentSection(post.id, post.comments)}
     </li>`;
 };

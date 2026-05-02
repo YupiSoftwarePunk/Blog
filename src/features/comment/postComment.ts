@@ -12,7 +12,7 @@ export function renderCommentSection(postId: number, comments: string[] = []): s
             <input type="text" id="input-comment-${postId}" placeholder="Напиши коммент..." 
                 class="flex-1 border-2 border-black p-2 text-xs outline-none focus:bg-yellow-50">
             <button onclick="window.addComment(${postId})" 
-                class="bg-black text-white px-4 py-2 text-xs font-black uppercase hover:bg-purple-600 transition-all">
+                class="bg-purple-400 border-2 border-black px-4 py-2 font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 transition-all">
                 OK
             </button>
         </div>

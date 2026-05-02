@@ -3,7 +3,7 @@ import { renderHeader } from './widgets/header/header.ts';
 import { renderPostList } from './widgets/post-list/post-list.ts';
 import { renderSidebar } from './widgets/sidebar/sidebar.ts';
 import { renderCreatePostForm } from './features/create-post/create-post.ts';
-import { renderPostCard } from './entities/post/post-card.ts';
+import { renderPostCard } from './features/post-card/post-card.ts';
 import { Post } from './entities/post/post.ts';
 
 import { SaveData } from './shared/api/storage';
@@ -11,12 +11,55 @@ import { debounce } from './shared/lib/utils.ts';
 import { initFormatting } from './features/formatting/formatterLogic.ts';
 import { setupPostInteractions } from './features/shortcuts/shortcuts.ts';
 import { showConfirmDelete } from './features/delete-post/deletePost.ts';
+import { renderFooter } from './widgets/footer/footer.ts';
 
 const blogStorage = new SaveData('Blog_');
 
 let refreshAttributes: () => void = () => {};
 
 let allPosts: any[] = [];
+
+let activeTag: string | null = null;
+let searchQuery: string = "";
+
+
+const applyFilters = () => {
+    const postCards = document.querySelectorAll('.post-card');
+    
+    postCards.forEach(card => {
+        const htmlCard = card as HTMLElement;
+        const text = htmlCard.textContent?.toLowerCase() || '';
+        const tags = htmlCard.dataset.tags?.toLowerCase() || '';
+        
+        const matchesSearch = text.includes(searchQuery.toLowerCase());
+        const matchesTag = !activeTag || tags.includes(activeTag.toLowerCase());
+
+        if (matchesSearch && matchesTag) {
+            htmlCard.style.display = 'block';
+        } else {
+            htmlCard.style.display = 'none';
+        }
+    });
+};
+
+const updateTagCloud = () => {
+    const tagsContainer = document.getElementById('tags-container');
+    if (!tagsContainer) return;
+
+    const allTags = new Set<string>();
+    allPosts.forEach(post => {
+        if (post.tags) post.tags.forEach((t: string) => allTags.add(t));
+    });
+
+    const tagsHtml = Array.from(allTags).map(tag => `
+        <span class="tag-filter cursor-pointer bg-white border-2 border-black px-2 py-1 hover:bg-yellow-400 transition-all ${activeTag === tag ? 'bg-yellow-400 shadow-none translate-x-0.5' : 'shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}" data-tag="${tag}">
+            #${tag}
+        </span>
+    `).join('');
+
+    const resetHtml = `<span class="tag-filter cursor-pointer bg-red-400 text-white border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none font-black">СБРОС ✕</span>`;
+    tagsContainer.innerHTML = resetHtml + tagsHtml;
+};
 
 
 const syncFormatting = () => {
@@ -38,7 +81,8 @@ const updatePostList = () => {
     const listElement = document.getElementById('post-list');
     if (listElement) {
         listElement.innerHTML = allPosts.map(post => renderPostCard(post)).join('');
-
+        updateTagCloud();
+        applyFilters();
         refreshAttributes(); 
         syncFormatting();
     }
@@ -62,7 +106,35 @@ const initApp = () => {
         <div id="post-modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
             ${renderCreatePostForm()}
         </div>
+
+        <footer class="bg-yellow-400 border-t-4 border-black p-4 mt-10 text-center">
+            ${renderFooter()}
+        </footer>
     `;
+    
+    const initSidebarLogic = () => {
+        const searchInput = document.getElementById('blog-search') as HTMLInputElement;
+        searchInput?.addEventListener('input', debounce((e: Event) => {
+            searchQuery = (e.target as HTMLInputElement).value;
+            applyFilters();
+        }, 400));
+        document.addEventListener('click', (e) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('tag-filter') || target.classList.contains('tag-badge')) {
+                const tagText = target.dataset.tag || target.textContent?.replace('#', '').trim();
+                
+                if (target.textContent?.includes('СБРОС')) {
+                    activeTag = null;
+                } 
+                else {
+                    activeTag = tagText || null;
+                }
+                
+                updateTagCloud();
+                applyFilters();
+            }
+        });
+    };
 
     const interactions = setupPostInteractions(blogStorage);
     if (interactions) {
