@@ -1,5 +1,6 @@
 import { SaveData } from '../../shared/api/storage';
 import { showConfirmDelete } from '../delete-post/delete-post'; 
+import { openEditModal } from '../edit-post/edit-post';
 
 export function initKeyboardShortcuts(storage: SaveData): void {
     console.log('Система горячих клавиш инициализирована');
@@ -94,6 +95,16 @@ export function initKeyboardShortcuts(storage: SaveData): void {
                 e.preventDefault();
                 console.log(`-> Действие: Комментирование поста ${postId}`);
                 (window as any).openCommentEditor(Number(postId));
+            }
+
+            if (e.key.toLowerCase() === 'e' || e.key.toLowerCase() === 'у') {
+                e.preventDefault();
+                console.log(`-> Действие: Редактирование поста ${postId}`);
+                const allPosts = storage.get<any[]>('dynamic_posts') || [];
+    
+                openEditModal(postId, allPosts, storage, () => {
+                    (window as any).refreshAppUI?.();
+                });
             }
         }
     }, true);

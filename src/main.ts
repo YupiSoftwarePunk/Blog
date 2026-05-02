@@ -208,4 +208,14 @@ const convertFileToBase64 = (file: File): Promise<string> => {
     }
 };
 
+(window as any).refreshAppUI = () => {
+    const updated = blogStorage.get<any[]>('dynamic_posts');
+    if (updated) {
+        allPosts = updated;
+        updatePostList();
+    }
+};
+
+(window as any).initFormatting = initFormatting;
+
 document.addEventListener('DOMContentLoaded', initApp);
