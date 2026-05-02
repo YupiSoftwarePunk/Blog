@@ -4,7 +4,7 @@ export const renderCreatePostForm = (): string => {
         <div class="bg-white border-4 border-black w-full max-w-[440px] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in zoom-in duration-150">
             
             <div class="bg-yellow-400 border-b-4 border-black p-2 flex justify-between items-center">
-                <span class="text-sm font-black uppercase italic tracking-tight text-black">New_Entry.exe</span>
+                <span class="text-sm font-black uppercase italic tracking-tight text-black">Новый пост</span>
                 <button id="close-modal" class="bg-white border-2 border-black w-6 h-6 flex items-center justify-center font-black hover:bg-red-400 transition-colors">
                     ✕
                 </button>

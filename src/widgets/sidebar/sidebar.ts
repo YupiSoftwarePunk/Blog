@@ -6,9 +6,6 @@ export const renderSidebar = (): string => {
             <form class="flex flex-col gap-4">
                 <input id="blog-search" type="text" placeholder="Поиск по блогу..." 
                     class="bg-white border-4 border-black p-3 font-bold outline-none focus:bg-yellow-100 placeholder:text-black/50">
-                <button type="submit" class="bg-black text-white py-3 font-black uppercase hover:bg-white hover:text-black border-4 border-black transition-colors">
-                    Искать!
-                </button>
             </form>
         </div>
 

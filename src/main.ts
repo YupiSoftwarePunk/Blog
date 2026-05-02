@@ -13,6 +13,7 @@ import { setupPostInteractions } from './features/shortcuts/shortcuts.ts';
 import { showConfirmDelete } from './features/delete-post/deletePost.ts';
 import { renderFooter } from './widgets/footer/footer.ts';
 import { applyFilters, updateTagCloud, initFilterLogic} from './features/tag-filter/tag-filter.ts';
+import { initSearchLogic, applyHighlighting, getSearchQuery } from './features/post-search/post-search.ts';
 
 const blogStorage = new SaveData('Blog_');
 
@@ -41,6 +42,7 @@ const updatePostList = () => {
         listElement.innerHTML = allPosts.map(post => renderPostCard(post)).join('');
         updateTagCloud(allPosts);
         applyFilters();
+        applyHighlighting();
         refreshAttributes(); 
         syncFormatting();
     }
@@ -87,6 +89,10 @@ const initApp = () => {
     `;
 
     initFilterLogic(() => allPosts);
+    initSearchLogic(() => {
+        updatePostList();
+        applyHighlighting();
+    });
 
     const interactions = setupPostInteractions(blogStorage);
     if (interactions) {
