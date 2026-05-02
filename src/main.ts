@@ -60,10 +60,7 @@ const initApp = () => {
         </div>
         
         <div id="post-modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
-            <div class="bg-white border-4 border-black p-8 shadow-[15px_15px_0px_0px_rgba(251,191,36,1)] w-full max-width-2xl relative">
-                <button id="close-modal" class="absolute -top-4 -right-4 bg-red-400 border-4 border-black w-10 h-10 font-black text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1">X</button>
-                ${renderCreatePostForm()}
-            </div>
+            ${renderCreatePostForm()}
         </div>
     `;
 

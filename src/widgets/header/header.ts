@@ -4,7 +4,7 @@ export const renderHeader = (): string => {
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center gap-4">
                 <div class="bg-white border-4 border-black p-1 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                    <img src="img/cover.jpg" class="w-10 h-10 object-cover" alt="Logo">
+                    <img src="/duck.jpg" class="w-10 h-10 object-cover" alt="Logo">
                 </div>
                 <h1 class="font-black text-2xl uppercase tracking-tighter italic">Deniskis_Blog</h1>
             </div>
