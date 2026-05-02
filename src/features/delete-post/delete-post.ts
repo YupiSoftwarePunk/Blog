@@ -35,7 +35,7 @@ export function showConfirmDelete(postId: string | number, postElement: HTMLElem
 
     noBtn.onclick = () => confirmOverlay.remove();
     yesBtn.onclick = () => {
-        postElement.classList.add('translate-x-full', 'opacity-0'); // Эффект вылета
+        postElement.classList.add('translate-x-full', 'opacity-0');
         setTimeout(() => {
             postElement.remove();
             const currentDynamic = storage.get<any[]>('dynamic_posts') || [];

@@ -9,8 +9,8 @@ import { Post } from './entities/post/post.ts';
 import { SaveData } from './shared/api/storage';
 import { debounce } from './shared/lib/utils.ts';
 import { initFormatting } from './features/formatting/formatterLogic.ts';
-import { setupPostInteractions } from './features/shortcuts/shortcuts.ts';
-import { showConfirmDelete } from './features/delete-post/deletePost.ts';
+import { initKeyboardShortcuts, setupPostInteractions } from './features/shortcuts/shortcuts.ts';
+import { showConfirmDelete } from './features/delete-post/delete-post.ts';
 import { renderFooter } from './widgets/footer/footer.ts';
 import { applyFilters, updateTagCloud, initFilterLogic} from './features/tag-filter/tag-filter.ts';
 import { initSearchLogic, applyHighlighting, getSearchQuery } from './features/post-search/post-search.ts';
@@ -94,7 +94,9 @@ const initApp = () => {
         applyHighlighting();
     });
 
-    const interactions = setupPostInteractions(blogStorage);
+    initKeyboardShortcuts(blogStorage);
+
+    const interactions = setupPostInteractions();
     if (interactions) {
         refreshAttributes = interactions.refreshPostAttributes;
     }

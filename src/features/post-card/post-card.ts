@@ -1,4 +1,4 @@
-import { renderCommentSection } from '../comment/postComment.ts'; 
+import { renderCommentSection } from '../comment/post-comment.ts'; 
 
 export const renderPostCard = (post: any): string => {
     return `
