@@ -21,6 +21,7 @@ let allPosts: any[] = [];
 
 let activeTag: string | null = null;
 let searchQuery: string = "";
+let currentCommentPostId: number | null = null;
 
 
 const applyFilters = () => {
@@ -107,6 +108,22 @@ const initApp = () => {
             ${renderCreatePostForm()}
         </div>
 
+        <div id="comment-modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+            <div class="bg-white border-4 border-black p-6 w-full max-w-lg shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+                <h2 class="font-black text-2xl uppercase mb-4 italic">Оставить мнение</h2>
+                <textarea id="comment-textarea" rows="4" placeholder="Пиши по фактам..." 
+                    class="w-full border-4 border-black p-3 font-bold outline-none focus:bg-yellow-100 resize-none mb-4"></textarea>
+                <div class="flex justify-end gap-4">
+                    <button id="cancel-comment" class="bg-red-400 text-white border-4 border-black px-4 py-2 font-black uppercase hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
+                        ОТМЕНА
+                    </button>
+                    <button id="submit-comment" class="bg-purple-400 border-4 border-black px-4 py-2 font-black uppercase hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
+                        ОТПРАВИТЬ
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <footer class="bg-yellow-400 border-t-4 border-black p-4 mt-10 text-center">
             ${renderFooter()}
         </footer>
@@ -136,6 +153,8 @@ const initApp = () => {
         });
     };
 
+    updatePostList();
+
     const interactions = setupPostInteractions(blogStorage);
     if (interactions) {
         refreshAttributes = interactions.refreshPostAttributes;
@@ -164,6 +183,34 @@ const initApp = () => {
         }, 400);
         searchInput.addEventListener('input', handleSearch);
     }
+
+
+    const commentModal = document.getElementById('comment-modal-overlay')!;
+    const commentTextarea = document.getElementById('comment-textarea') as HTMLTextAreaElement;
+
+    const closeCommentModal = () => {
+        currentCommentPostId = null;
+        commentModal.classList.add('hidden');
+    };
+    document.getElementById('cancel-comment')?.addEventListener('click', closeCommentModal);
+
+    document.getElementById('submit-comment')?.addEventListener('click', () => {
+        if (currentCommentPostId === null) return;
+
+        const text = commentTextarea.value.trim();
+
+        if (text) {
+            const post = allPosts.find(p => p.id === currentCommentPostId);
+            if (post) {
+                if (!post.comments) post.comments = [];
+                post.comments.push(text);
+
+                savePostsToLocalStorage();
+                updatePostList();
+                closeCommentModal();
+            }
+        }
+    });
 
     document.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
@@ -224,19 +271,15 @@ const convertFileToBase64 = (file: File): Promise<string> => {
     }
 };
 
-(window as any).addComment = (id: number) => {
-    const input = document.getElementById(`input-comment-${id}`) as HTMLInputElement;
-    const text = input.value.trim();
-
-    if (text) {
-        const post = allPosts.find(p => p.id === id);
-        if (post) {
-            if (!post.comments) post.comments = [];
-            post.comments.push(text);
-
-            savePostsToLocalStorage();
-            updatePostList();
-        }
+(window as any).openCommentEditor = (id: number) => {
+    currentCommentPostId = id;
+    const modal = document.getElementById('comment-modal-overlay');
+    const textarea = document.getElementById('comment-textarea') as HTMLTextAreaElement;
+    
+    if (modal && textarea) {
+        textarea.value = '';
+        modal.classList.remove('hidden');
+        textarea.focus();
     }
 };
 
