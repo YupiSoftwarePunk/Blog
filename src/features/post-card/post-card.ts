@@ -1,3 +1,4 @@
+import { TextFormatter } from '../../shared/lib/utils.ts';
 import { renderCommentSection } from '../comment/post-comment.ts'; 
 
 export const renderPostCard = (post: any): string => {
@@ -8,7 +9,7 @@ export const renderPostCard = (post: any): string => {
         data-tags="${post.tags ? post.tags.join(',') : ''}"
         tabindex="0">
         <div class="flex justify-between items-start mb-4">
-            <h3 class="post-title font-black text-xl uppercase italic">${post.title}</h3>
+            <h3 class="post-title font-black text-xl uppercase italic">${TextFormatter.applyFullFormatting(post.title)}</h3>
         </div>
 
         ${post.image ? `
@@ -17,7 +18,7 @@ export const renderPostCard = (post: any): string => {
             </div>
         ` : ''}
 
-        <p class="post-content font-medium text-lg leading-relaxed mb-6 text-black/80">${post.content}</p>
+        <p class="post-content font-medium text-lg leading-relaxed mb-6 text-black/80">${TextFormatter.applyFullFormatting(post.content)}</p>
         
         <div class="flex flex-wrap gap-2 mb-6">
             ${post.tags && post.tags.length > 0 

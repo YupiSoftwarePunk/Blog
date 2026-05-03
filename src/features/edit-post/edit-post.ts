@@ -1,5 +1,6 @@
 import { SaveData } from "../../shared/api/storage";
 import { Post } from "../../entities/post/post";
+import { TextFormatter } from "../../shared/lib/utils";
 
 const calculateStats = (content: string, views: string | number) => {
     const symbols = content.length;
@@ -58,6 +59,7 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
                     <div>
                         <label class="block font-black uppercase text-sm mb-1">Текст поста:</label>
                         <textarea name="content" id="edit-content" rows="6" class="w-full border-4 border-black p-3 font-bold focus:bg-yellow-50 outline-none resize-none">${post.content}</textarea>
+                        <div id="edit-preview-container" class="hidden min-h-[150px] p-4 border-4 border-dashed border-black bg-gray-50 overflow-y-auto max-h-[300px]"></div>
                     </div>
 
                     <div class="flex flex-wrap gap-3 pt-4">
@@ -81,6 +83,8 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
 
     const form = overlay.querySelector('#edit-post-form') as HTMLFormElement;
     const textarea = overlay.querySelector('#edit-content') as HTMLTextAreaElement;
+    const formatBtn = overlay.querySelector('#format-edit');
+    const previewContainer = overlay.querySelector('#edit-preview-container') as HTMLElement;
 
     textarea.addEventListener('input', () => {
         const newStats = calculateStats(textarea.value, post.views);
@@ -89,11 +93,24 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
         overlay.querySelector('#stat-complexity')!.textContent = newStats.complexity;
     });
 
-    overlay.querySelector('#format-edit')?.addEventListener('click', () => {
-        const fakeData = [{ element: textarea, content: textarea.value, originalTitle: '' }];
-        //@ts-ignore
-        window.initFormatting?.(fakeData);
-        textarea.dispatchEvent(new Event('input')); 
+    formatBtn?.addEventListener('click', () => {
+        const isPreviewing = !previewContainer.classList.contains('hidden');
+
+        if (isPreviewing) {
+            previewContainer.classList.add('hidden');
+            textarea.classList.remove('hidden');
+            formatBtn.textContent = 'ПРЕДПРОСМОТР';
+            formatBtn.classList.remove('bg-green-400');
+        } 
+        else {
+            const formatted = TextFormatter.applyFullFormatting(textarea.value);
+            previewContainer.innerHTML = formatted || '<span class="italic text-gray-400">Пусто...</span>';
+            
+            previewContainer.classList.remove('hidden');
+            textarea.classList.add('hidden');
+            formatBtn.textContent = 'РЕДАКТИРОВАТЬ';
+            formatBtn.classList.add('bg-green-400');
+        }
     });
 
     const close = () => overlay.remove();

@@ -19,6 +19,15 @@ export function initKeyboardShortcuts(storage: SaveData): void {
             const modalOverlay = document.getElementById('post-modal-overlay');
             if (modalOverlay) modalOverlay.classList.add('hidden');
             document.querySelectorAll('.delete-overlay, #comment-modal-overlay').forEach(m => m.classList.add('hidden'));
+
+            const dynamicModals = document.querySelectorAll('#edit-modal-overlay, .delete-overlay');
+            dynamicModals.forEach(modal => {
+                modal.remove();
+            });
+
+            if (document.activeElement instanceof HTMLElement) {
+                document.activeElement.blur();
+            }
             return;
         }
 
