@@ -20,6 +20,8 @@ const blogStorage = new SaveData('Blog_');
 let refreshAttributes: () => void = () => {};
 let allPosts: any[] = [];
 let currentCommentPostId: number | null = null;
+const POSTS_PER_PAGE = 3; 
+let currentVisibleCount = POSTS_PER_PAGE;
 
 const syncFormatting = () => {
     const postElements = document.querySelectorAll('.post-card'); 
@@ -36,16 +38,56 @@ const savePostsToLocalStorage = () => {
     blogStorage.set('dynamic_posts', allPosts);
 };
 
-const updatePostList = () => {
+const updatePostList = (reset = false) => {
+    if (reset) {
+        currentVisibleCount = POSTS_PER_PAGE;
+    }
+
     const listElement = document.getElementById('post-list');
     if (listElement) {
-        listElement.innerHTML = allPosts.map(post => renderPostCard(post)).join('');
+        const visiblePosts = allPosts.slice(0, currentVisibleCount);
+        listElement.innerHTML = visiblePosts.map(post => renderPostCard(post)).join('');
+        
         updateTagCloud(allPosts);
         applyFilters();
         applyHighlighting();
         refreshAttributes(); 
         syncFormatting();
+
+        const observerTarget = document.getElementById('observer-target');
+        if (observerTarget) {
+            observerTarget.style.display = currentVisibleCount >= allPosts.length ? 'none' : 'flex';
+        }
     }
+};
+
+
+const setupIntersectionObserver = () => {
+    const observerTarget = document.getElementById('observer-target');
+    const loadingIndicator = document.getElementById('loading-indicator');
+
+    if (!observerTarget) return;
+
+    const observer = new IntersectionObserver((entries) => {
+        const target = entries[0];
+
+        if (target.isIntersecting && currentVisibleCount < allPosts.length) {
+
+            loadingIndicator?.classList.remove('hidden');
+
+            setTimeout(() => {
+                currentVisibleCount += POSTS_PER_PAGE;
+                updatePostList();
+                loadingIndicator?.classList.add('hidden');
+            }, 600);
+        }
+    }, {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1
+    });
+
+    observer.observe(observerTarget);
 };
 
 
@@ -58,7 +100,15 @@ const initApp = () => {
         ${renderHeader()}
         <div class="container mx-auto px-4">
             <main class="grid grid-cols-1 md:grid-cols-12 gap-10 pb-20">
-                ${renderPostList()}
+                <div class="md:col-span-8 flex flex-col">
+                    ${renderPostList()}
+                    
+                    <div id="observer-target" class="w-full justify-center py-10" style="display: none;">
+                        <div id="loading-indicator" class="hidden bg-yellow-400 border-4 border-black px-8 py-3 font-black uppercase text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] animate-pulse">
+                            Загрузка...
+                        </div>
+                    </div>
+                </div>
                 ${renderSidebar()}
             </main>
         </div>
@@ -90,11 +140,12 @@ const initApp = () => {
 
     initFilterLogic(() => allPosts);
     initSearchLogic(() => {
-        updatePostList();
+        updatePostList(true);
         applyHighlighting();
     });
 
     initKeyboardShortcuts(blogStorage);
+    setupIntersectionObserver();
 
     const interactions = setupPostInteractions();
     if (interactions) {
@@ -181,7 +232,7 @@ const initApp = () => {
 
         allPosts.unshift(newPostInstance.createNewPost());
         savePostsToLocalStorage();
-        updatePostList();
+        updatePostList(true);
         toggleModal(false);
         form.reset();
     });

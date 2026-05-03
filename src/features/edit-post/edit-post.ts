@@ -26,7 +26,7 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
     overlay.innerHTML = `
         <div class="bg-white border-4 border-black p-0 max-w-2xl w-full shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
             <div class="bg-purple-500 border-b-4 border-black p-3 flex justify-between items-center">
-                <span class="text-white font-black text-lg uppercase italic">EDIT_MODE.EXE</span>
+                <span class="text-white font-black text-lg uppercase italic">Редактирование</span>
                 <button id="close-edit" class="bg-white border-2 border-black w-8 h-8 flex items-center justify-center font-black hover:bg-red-400 transition-colors">✕</button>
             </div>
 
