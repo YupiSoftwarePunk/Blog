@@ -43,11 +43,11 @@ export const renderFooter = (posts: any[]): string => {
                         </div>
                         <div class="border-4 border-black p-4 bg-yellow-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             <div class="text-3xl font-black">${totalLikes}</div>
-                            <div class="text-[10px] uppercase font-bold">Просмотры</div>
+                            <div class="text-[10px] uppercase font-bold">лайки</div>
                         </div>
                         <div class="border-4 border-black p-4 bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                             <div class="text-3xl font-black">${totalComments}</div>
-                            <div class="text-[10px] uppercase font-bold text-gray-500">Комм.</div>
+                            <div class="text-[10px] uppercase font-bold text-gray-500">Комментарии</div>
                         </div>
                     </div>
                 </div>
