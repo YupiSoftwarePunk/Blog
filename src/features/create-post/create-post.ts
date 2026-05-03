@@ -1,7 +1,7 @@
 export const renderCreatePostForm = (): string => {
     return `
-    <div id="post-modal-overlay" class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 p-4 transition-all">
-        <div class="bg-white border-4 border-black w-full max-w-[440px] shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] animate-in fade-in zoom-in duration-150">
+    <div id="post-modal-overlay" class="fixed inset-0 z-[1000] bg-black/10 flex items-center justify-center p-4 transition-all">
+        <div class="bg-white border-4 border-black p-0 max-w-2xl w-full shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] overflow-hidden animate-in fade-in zoom-in duration-150">
             
             <div class="bg-yellow-400 border-b-4 border-black p-2 flex justify-between items-center">
                 <span class="text-sm font-black uppercase italic tracking-tight text-black">Новый пост</span>
@@ -43,7 +43,7 @@ export const renderCreatePostForm = (): string => {
                 </div>
 
                 <div class="flex gap-3 pt-1">
-                    <button type="submit" class="flex-1 bg-black text-white py-2 border-2 border-black shadow-[3px_3px_0px_0px_rgba(251,191,36,1)] hover:bg-yellow-400 hover:text-black active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all font-black uppercase text-xs">
+                    <button type="submit" class="flex-1 bg-black text-white py-2 border-2 border-black shadow-[3px_3px_0px_0px_rgba(251,191,36,1)] hover:bg-yellow-400 hover:text-black active:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all font-black uppercase text-xs">
                         Опубликовать
                     </button>
                     <button type="button" id="cancel-post" class="px-4 border-2 border-black font-black uppercase text-[10px] hover:bg-red-400 transition-colors">

@@ -25,3 +25,52 @@
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+
+html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+    .shadow-\[8px_8px_0px_0px_rgba\(0\,0\,0\,1\)\],
+    .shadow-\[12px_12px_0px_0px_rgba\(0\,0\,0\,1\)\] {
+        box-shadow: 4px 4px 0px 0px rgba(0,0,0,1) !important;
+    }
+
+    header > .container {
+        flex-direction: column !important;
+        gap: 1rem;
+    }
+    header button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .grid-cols-2 {
+        grid-template-columns: 1fr !important; 
+    }
+
+    .post-card {
+        padding: 1rem !important;
+        word-break: break-word;
+    }
+    .post-card img {
+        max-height: 250px !important; 
+    }
+
+    aside kbd {
+        font-size: 8px !important;
+    }
+    #blog-search {
+        font-size: 16px !important;
+    }
+
+    footer .grid-cols-3 {
+        grid-template-columns: 1fr !important;
+    }
+    footer .h-32 {
+        height: auto !important;
+        min-height: 8rem;
+    }
+}

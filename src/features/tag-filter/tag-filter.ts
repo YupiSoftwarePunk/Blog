@@ -38,7 +38,7 @@ export const updateTagCloud = (allPosts: any[]) => {
         </span>
     `).join('');
 
-    const resetHtml = `<span class="tag-filter cursor-pointer bg-red-400 text-white border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none font-black">СБРОС ✕</span>`;
+    const resetHtml = `<span class="tag-filter cursor-pointer bg-red-400 text-white border-2 border-black px-2 py-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] font-black">СБРОС ✕</span>`;
     
     tagsContainer.innerHTML = resetHtml + tagsHtml;
 };
