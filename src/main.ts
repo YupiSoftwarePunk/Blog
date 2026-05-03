@@ -150,6 +150,15 @@ const initApp = () => {
         }
     });
 
+    window.addEventListener('scroll', () => {
+        const progressBar = document.getElementById('scroll-progress');
+        if (progressBar) {
+            const windowHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (window.scrollY / windowHeight) * 100;
+            progressBar.style.width = `${scrolled}%`;
+        }
+    });
+
     const form = document.getElementById('create-post-form') as HTMLFormElement;
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();

@@ -12,5 +12,6 @@ export const renderHeader = (): string => {
                 + Создать пост
             </button>
         </div>
+        <div id="scroll-progress" class="absolute bottom-0 left-0 h-1 bg-black w-0 transition-all duration-100"></div>
     </header>`;
 };
