@@ -84,7 +84,7 @@ const initApp = () => {
         </div>
 
         <footer class="bg-yellow-400 border-t-4 border-black p-4 mt-10 text-center">
-            ${renderFooter()}
+            ${renderFooter(allPosts)}
         </footer>
     `;
 
