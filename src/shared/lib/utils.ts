@@ -39,42 +39,53 @@ export const TextFormatter = {
     highlightKeywords: (keywords: string[] = [], className: string = 'highlight') => {
         return (text: string): string => {
             if (!text) return '';
-            const safeText = TextFormatter.escapeHtml(text);
-            if (!keywords.length) return safeText;
+            if (!keywords.length) return text;
 
             const pattern = keywords
                 .map(word => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
                 .join('|');
             
             const regex = new RegExp(`(${pattern})`, 'gi');
-            return safeText.replace(regex, `<mark class="${className}">$1</mark>`);
+            return text.replace(regex, `<mark class="${className}">$1</mark>`);
         };
     },
 
     syntaxHighlight: (code: string): string => {
-        let html = code
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-
-        return html
+        return code
             .replace(/("(.*?)"|'(.*?)'|`(.*?)`)/g, '<span class="token-string">$1</span>')
             .replace(/(\/\/.*)/g, '<span class="token-comment">$1</span>')
-            .replace(/\b(const|let|var|function|return|if|else|for|while|import|export|class|new|async|await)\b/g, '<span class="token-keyword">$1</span>')
-            .replace(/\b(console|window|document|Math|JSON|Object|Array)\b/g, '<span class="token-builtin">$1</span>')
+            .replace(/\b(const|let|var|function|return|if|else|for|while|import|export|class|new|async|await|public|private|protected|void|string|number|boolean|any)\b/g, '<span class="token-keyword">$1</span>')
+            .replace(/\b(console|window|document|Math|JSON|Object|Array|App|Service)\b/g, '<span class="token-builtin">$1</span>')
             .replace(/\b(\d+)\b/g, '<span class="token-number">$1</span>');
     },
 
     applyFullFormatting: (text: string, keywords: string[] = []): string => {
-        if (typeof text !== 'string') return '';
+        if (typeof text !== 'string' || !text.trim()) return '';
 
-        let processedText = TextFormatter.escapeHtml(text);
+        let processed = TextFormatter.escapeHtml(text);
+
+        processed = processed
+            .replace(/^&gt; ?/gm, '> ')
+            .replace(/&#x2F;/g, '/');
 
         if (keywords.length > 0) {
-            processedText = TextFormatter.highlightKeywords(keywords)(processedText);
+            processed = TextFormatter.highlightKeywords(keywords)(processed);
         }
 
-        return parseMarkdown(processedText);
+        let html = parseMarkdown(processed);
+
+        html = html.replace(/<code>([\s\S]*?)<\/code>/g, (match, codeContent) => {
+            const decodedCode = codeContent
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'");
+            
+            return `<code>${TextFormatter.syntaxHighlight(decodedCode)}</code>`;
+        });
+
+        return html;
     },
 
     getStats: (text: string): TextStats => {
