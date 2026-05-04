@@ -1,4 +1,4 @@
-import { SaveData } from "../../shared/api/storage";
+import { SaveData } from "../../shared/lib/storage";
 import { Post } from "../../entities/post/post";
 import { TextFormatter } from "../../shared/lib/utils";
 

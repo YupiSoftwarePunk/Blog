@@ -9,7 +9,8 @@ export class SaveData {
         try {
             const serializedValue = JSON.stringify(value);
             localStorage.setItem(`${this.#prefix}${key}`, serializedValue);
-        } catch (error) {
+        } 
+        catch (error) {
             console.error('LocalStorage Write Error:', error);
         }
     }
@@ -19,7 +20,8 @@ export class SaveData {
             const item = localStorage.getItem(`${this.#prefix}${key}`);
             if (item === null) return defaultValue;
             return JSON.parse(item) as T;
-        } catch (error) {
+        } 
+        catch (error) {
             console.error('LocalStorage Read Error:', error);
             return defaultValue;
         }

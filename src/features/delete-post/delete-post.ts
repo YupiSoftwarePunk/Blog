@@ -1,4 +1,4 @@
-import { SaveData } from "../../shared/api/storage";
+import { SaveData } from "../../shared/lib/storage";
 
 export function showConfirmDelete(postId: string | number, postElement: HTMLElement, storage: SaveData): void {
     const confirmOverlay = document.createElement('div');

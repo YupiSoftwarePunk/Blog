@@ -1,4 +1,4 @@
-import { SaveData } from '../../shared/api/storage';
+import { SaveData } from '../../shared/lib/storage';
 import { showConfirmDelete } from '../delete-post/delete-post'; 
 import { openEditModal } from '../edit-post/edit-post';
 

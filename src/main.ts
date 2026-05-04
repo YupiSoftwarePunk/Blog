@@ -6,7 +6,7 @@ import { renderCreatePostForm } from './features/create-post/create-post.ts';
 import { renderPostCard } from './features/post-card/post-card.ts';
 import { Post } from './entities/post/post.ts';
 
-import { SaveData } from './shared/api/storage';
+import { SaveData } from './shared/lib/storage.ts';
 import { debounce } from './shared/lib/utils.ts';
 import { initFormatting } from './features/formatting/formatterLogic.ts';
 import { initKeyboardShortcuts, setupPostInteractions } from './features/shortcuts/shortcuts.ts';
