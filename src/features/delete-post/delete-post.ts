@@ -1,4 +1,5 @@
 import { SaveData } from "../../shared/lib/storage";
+import { ApiClient } from "../../shared/api/api-client";
 
 export function showConfirmDelete(postId: string | number, postElement: HTMLElement, storage: SaveData): void {
     const confirmOverlay = document.createElement('div');
@@ -34,14 +35,25 @@ export function showConfirmDelete(postId: string | number, postElement: HTMLElem
     const noBtn = dialog.querySelector('#confirm-no') as HTMLButtonElement;
 
     noBtn.onclick = () => confirmOverlay.remove();
-    yesBtn.onclick = () => {
-        postElement.classList.add('translate-x-full', 'opacity-0');
-        setTimeout(() => {
-            postElement.remove();
-            const currentDynamic = storage.get<any[]>('dynamic_posts') || [];
-            const updatedDynamic = currentDynamic.filter(p => String(p.id) !== String(postId));
-            storage.set('dynamic_posts', updatedDynamic);
+
+    yesBtn.onclick = async () => {
+        try {
+            // 1. Отправляем запрос на сервер
+            await ApiClient.request(`/posts/${postId}`, { method: 'DELETE' });
+
+            // 2. Если успешно, удаляем из UI
+            postElement.classList.add('translate-x-full', 'opacity-0');
+            setTimeout(() => {
+                postElement.remove();
+                const currentDynamic = storage.get<any[]>('dynamic_posts') || [];
+                const updatedDynamic = currentDynamic.filter(p => String(p.id) !== String(postId));
+                storage.set('dynamic_posts', updatedDynamic);
+                confirmOverlay.remove();
+            }, 300);
+        } catch (error) {
+            console.error("Ошибка при удалении поста:", error);
+            alert("Не удалось удалить пост. Проверьте права доступа.");
             confirmOverlay.remove();
-        }, 300);
+        }
     };
 }

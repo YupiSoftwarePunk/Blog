@@ -1,0 +1,43 @@
+// shared/api/apiClient.ts
+
+const BASE_URL = 'http://localhost:5000/api';
+
+export class ApiClient {
+    // Получаем ключи из localStorage (их нужно туда сохранить после авторизации)
+    private static getApiKey() { return localStorage.getItem('api_key'); }
+    private static getJwtToken() { return localStorage.getItem('jwt_token'); }
+
+    // Универсальный метод для отправки запросов
+    static async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(options.headers as Record<string, string>)
+        };
+
+        const apiKey = this.getApiKey();
+        if (apiKey) headers['X-API-Key'] = apiKey;
+
+        const token = this.getJwtToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        try {
+            const response = await fetch(`${BASE_URL}${endpoint}`, {
+                ...options,
+                headers
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Ошибка API: ${response.status} - ${errorData}`);
+            }
+
+            // Некоторые эндпоинты (например удаление) могут не возвращать JSON
+            const text = await response.text();
+            return (text ? JSON.parse(text) : null) as T;
+        } 
+        catch (error) {
+            console.error(`[API Error] ${endpoint}:`, error);
+            throw error;
+        }
+    }
+}

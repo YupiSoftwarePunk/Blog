@@ -14,6 +14,9 @@ import { showConfirmDelete } from './features/delete-post/delete-post.ts';
 import { renderFooter } from './widgets/footer/footer.ts';
 import { applyFilters, updateTagCloud, initFilterLogic} from './features/tag-filter/tag-filter.ts';
 import { initSearchLogic, applyHighlighting, getSearchQuery } from './features/post-search/post-search.ts';
+import { PostService } from './shared/api/post-service.ts';
+import { ApiClient } from './shared/api/api-client.ts';
+import { renderLoginForm } from './features/auth/login-form.ts';
 
 const blogStorage = new SaveData('Blog_');
 
@@ -38,6 +41,48 @@ const savePostsToLocalStorage = () => {
     blogStorage.set('dynamic_posts', allPosts);
 };
 
+// const updatePostList = (reset = false) => {
+//     if (reset) {
+//         currentVisibleCount = POSTS_PER_PAGE;
+//     }
+
+//     const listElement = document.getElementById('post-list');
+//     if (listElement) {
+//         const visiblePosts = allPosts.slice(0, currentVisibleCount);
+//         listElement.innerHTML = visiblePosts.map(post => renderPostCard(post)).join('');
+        
+//         updateTagCloud(allPosts);
+//         applyFilters();
+//         applyHighlighting();
+//         refreshAttributes(); 
+//         syncFormatting();
+
+//         const observerTarget = document.getElementById('observer-target');
+//         if (observerTarget) {
+//             observerTarget.style.display = currentVisibleCount >= allPosts.length ? 'none' : 'flex';
+//         }
+//     }
+// };
+
+const fetchPostsFromApi = async () => {
+    try {
+        // Получаем все посты с бекенда. 
+        // ВАЖНО: бекенд возвращает DTO (id, title, authorLogin, categoryName, likesCount). 
+        const apiPosts = await ApiClient.request<any[]>('/posts/getall', {
+            method: 'POST',
+            body: JSON.stringify({ page: 1, limit: 100, category: "" })
+        });
+        
+        if (apiPosts && apiPosts.length > 0) {
+            allPosts = apiPosts;
+            savePostsToLocalStorage(); // Кэшируем
+            updatePostList(true); // Перерисовываем
+        }
+    } catch (error) {
+        console.warn("Не удалось получить свежие данные, используем кэш LocalStorage.");
+    }
+};
+
 const updatePostList = (reset = false) => {
     if (reset) {
         currentVisibleCount = POSTS_PER_PAGE;
@@ -59,6 +104,9 @@ const updatePostList = (reset = false) => {
             observerTarget.style.display = currentVisibleCount >= allPosts.length ? 'none' : 'flex';
         }
     }
+    
+    const footerContainer = document.querySelector('footer');
+    if (footerContainer) footerContainer.innerHTML = renderFooter(allPosts);
 };
 
 
@@ -116,21 +164,17 @@ const initApp = () => {
         <div id="post-modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
             ${renderCreatePostForm()}
         </div>
-
-        <div id="comment-modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        ${renderLoginForm()} <div id="comment-modal-overlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
             <div class="bg-white border-4 border-black p-6 w-full max-w-lg shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
                 <h2 class="font-black text-2xl uppercase mb-4 italic">Оставить мнение</h2>
                 <textarea id="comment-textarea" rows="4" placeholder="Пиши по фактам..." 
                     class="w-full border-4 border-black p-3 font-bold outline-none focus:bg-yellow-100 resize-none mb-4"></textarea>
                 <div class="flex justify-end gap-4">
-                    <button id="cancel-comment" class="bg-red-400 text-white border-4 border-black px-4 py-2 font-black uppercase hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
-                        ОТМЕНА
-                    </button>
-                    <button id="submit-comment" class="bg-purple-400 border-4 border-black px-4 py-2 font-black uppercase hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
-                        ОТПРАВИТЬ
-                    </button>
+                    <button id="cancel-comment" class="bg-red-400 text-white border-4 border-black px-4 py-2 font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">ОТМЕНА</button>
+                    <button id="submit-comment" class="bg-purple-400 border-4 border-black px-4 py-2 font-black uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">ОТПРАВИТЬ</button>
                 </div>
             </div>
+        </div>
         </div>
 
         <footer class="bg-yellow-400 border-t-4 border-black p-4 mt-10 text-center">
@@ -139,29 +183,86 @@ const initApp = () => {
     `;
 
     initFilterLogic(() => allPosts);
-    initSearchLogic(() => {
-        updatePostList(true);
-        applyHighlighting();
-    });
-
+    initSearchLogic(() => { updatePostList(true); applyHighlighting(); });
     initKeyboardShortcuts(blogStorage);
-    setupIntersectionObserver();
 
     const interactions = setupPostInteractions();
-    if (interactions) {
-        refreshAttributes = interactions.refreshPostAttributes;
-    }
+    if (interactions) refreshAttributes = interactions.refreshPostAttributes;
 
-    const modal = document.getElementById('post-modal-overlay')!;
-    const createBtn = document.getElementById('btn-create-post');
-    const toggleModal = (show: boolean) => modal.classList.toggle('hidden', !show);
-
-    createBtn?.addEventListener('click', () => toggleModal(true));
-    document.getElementById('close-modal')?.addEventListener('click', () => toggleModal(false));
-    document.getElementById('cancel-post')?.addEventListener('click', () => toggleModal(false));
-
+    // Первичный рендер из кэша и запуск Observer
     updatePostList();
+    setupIntersectionObserver();
 
+    // 2. ФОНОВЫЙ ЗАПРОС К API ДЛЯ АКТУАЛИЗАЦИИ
+    fetchPostsFromApi();
+
+const postModal = document.getElementById('post-modal-overlay')!;
+    const togglePostModal = (show: boolean) => postModal.classList.toggle('hidden', !show);
+    document.getElementById('btn-create-post')?.addEventListener('click', () => togglePostModal(true));
+    document.getElementById('close-modal')?.addEventListener('click', () => togglePostModal(false));
+    document.getElementById('cancel-post')?.addEventListener('click', () => togglePostModal(false));
+
+    const form = document.getElementById('create-post-form') as HTMLFormElement;
+    form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        
+        // Берем только то, что ждет сервер. Картинки и теги игнорируем!
+        const title = formData.get('title') as string;
+        const content = formData.get('content') as string;
+        // Категорию пока хардкодим, так как в интерфейсе формы ее нет
+        const categoryid = 1; 
+
+        try {
+            // Отправляем на бекенд
+            const newPost = await ApiClient.request<any>('/posts', {
+                method: 'PUT',
+                body: JSON.stringify({ title, content, categoryid })
+            });
+
+            allPosts.unshift(newPost);
+            savePostsToLocalStorage();
+            updatePostList(true);
+            togglePostModal(false);
+            form.reset();
+        } catch (error) {
+            alert("Ошибка при создании поста! Проверьте авторизацию.");
+        }
+    });
+
+    // --- ЛОГИКА АВТОРИЗАЦИИ (Интеграция с API) ---
+    const loginModal = document.getElementById('login-modal-overlay')!;
+    const toggleLoginModal = (show: boolean) => loginModal.classList.toggle('hidden', !show);
+    
+    // ДОБАВЬ В header.ts КНОПКУ С id="btn-login" ЧТОБЫ ЭТО РАБОТАЛО
+    document.getElementById('btn-login')?.addEventListener('click', () => toggleLoginModal(true));
+    document.getElementById('close-login-modal')?.addEventListener('click', () => toggleLoginModal(false));
+
+    const loginForm = document.getElementById('login-form') as HTMLFormElement;
+    loginForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(loginForm);
+        const login = formData.get('login') as string;
+        const password = formData.get('password') as string;
+        const apikey = formData.get('apikey') as string;
+
+        if (apikey) localStorage.setItem('api_key', apikey);
+
+        try {
+            const token = await ApiClient.request<string>('/users/auth', {
+                method: 'POST',
+                body: JSON.stringify({ login, password })
+            });
+            localStorage.setItem('jwt_token', token);
+            alert("Успешный вход!");
+            toggleLoginModal(false);
+            loginForm.reset();
+        } catch (error) {
+            alert("Неверный логин или пароль!");
+        }
+    });
+
+    // --- КОММЕНТАРИИ И ПРОЧЕЕ ---
     const commentModal = document.getElementById('comment-modal-overlay')!;
     const commentTextarea = document.getElementById('comment-textarea') as HTMLTextAreaElement;
 
@@ -171,19 +272,29 @@ const initApp = () => {
     };
     document.getElementById('cancel-comment')?.addEventListener('click', closeCommentModal);
 
-    document.getElementById('submit-comment')?.addEventListener('click', () => {
+    document.getElementById('submit-comment')?.addEventListener('click', async () => {
         if (currentCommentPostId === null) return;
         const text = commentTextarea.value.trim();
 
         if (text) {
-            const post = allPosts.find(p => p.id === currentCommentPostId);
-            if (post) {
-                if (!post.comments) post.comments = [];
-                post.comments.push(text);
+            try {
+                // Отправляем комментарий на бекенд (AuthorId пока хардкод 1)
+                await ApiClient.request('/posts/comments', {
+                    method: 'PUT',
+                    body: JSON.stringify({ content: text, postId: currentCommentPostId, authorId: 1 })
+                });
 
-                savePostsToLocalStorage();
-                updatePostList();
+                // Чтобы не перезапрашивать весь список, локально добавляем коммент для UI
+                const post = allPosts.find(p => p.id === currentCommentPostId);
+                if (post) {
+                    if (!post.comments) post.comments = [];
+                    post.comments.push({ content: text, authorLogin: "Вы", createdAt: new Date().toISOString() });
+                    savePostsToLocalStorage();
+                    updatePostList();
+                }
                 closeCommentModal();
+            } catch (error) {
+                alert("Ошибка! Вы авторизованы?");
             }
         }
     });
@@ -210,32 +321,32 @@ const initApp = () => {
         }
     });
 
-    const form = document.getElementById('create-post-form') as HTMLFormElement;
-    form?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(form);
+    // const form = document.getElementById('create-post-form') as HTMLFormElement;
+    // form?.addEventListener('submit', async (e) => {
+    //     e.preventDefault();
+    //     const formData = new FormData(form);
 
-        const imageInput = form.querySelector('input[name="imageFile"]') as HTMLInputElement;
-        let finalImage = (formData.get('imageLink') as string) || null;
+    //     const imageInput = form.querySelector('input[name="imageFile"]') as HTMLInputElement;
+    //     let finalImage = (formData.get('imageLink') as string) || null;
 
-        if (imageInput.files?.[0]) {
-            finalImage = await convertFileToBase64(imageInput.files[0]);
-        }
+    //     if (imageInput.files?.[0]) {
+    //         finalImage = await convertFileToBase64(imageInput.files[0]);
+    //     }
 
-        const newPostInstance = new Post(
-            formData.get('title') as string,
-            formData.get('content') as string,
-            'user_95',
-            (formData.get('tags') as string || '').split(',').map(t => t.trim()).filter(t => t),
-            finalImage
-        );
+    //     const newPostInstance = new Post(
+    //         formData.get('title') as string,
+    //         formData.get('content') as string,
+    //         'user_95',
+    //         (formData.get('tags') as string || '').split(',').map(t => t.trim()).filter(t => t),
+    //         finalImage
+    //     );
 
-        allPosts.unshift(newPostInstance.createNewPost());
-        savePostsToLocalStorage();
-        updatePostList(true);
-        toggleModal(false);
-        form.reset();
-    });
+    //     allPosts.unshift(newPostInstance.createNewPost());
+    //     savePostsToLocalStorage();
+    //     updatePostList(true);
+    //     toggleModal(false);
+    //     form.reset();
+    // });
 };
 
 const convertFileToBase64 = (file: File): Promise<string> => {
