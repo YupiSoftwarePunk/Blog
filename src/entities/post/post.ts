@@ -42,4 +42,6 @@ export interface PostDTO {
     updatedAt: string;
     likesCount: number;
     comments: CommentDTO[];
+
+    localImage?: string | null;
 }

@@ -13,20 +13,19 @@ export function createLike(data: Post, isLikedInitial: boolean): HTMLDivElement 
         </svg>
     `;
 
-    // Логика клика по лайку
     likeContainer.onclick = async (e) => {
         e.stopPropagation();
         try {
-            // Отправляем на сервер
+
             await ApiClient.request(`/posts/${data.authorId}/likes`, { method: 'POST' });
-            
-            // Визуальное переключение
+
             const svg = likeContainer.querySelector('svg');
             const isNowLiked = likeContainer.classList.toggle('is-liked');
             if (svg) {
                 svg.setAttribute('fill', isNowLiked ? '#ff0000' : 'none');
             }
-        } catch (error) {
+        } 
+        catch (error) {
             console.error("Не удалось поставить лайк:", error);
         }
     };

@@ -4,7 +4,7 @@ import { renderPostList } from './widgets/post-list/post-list.ts';
 import { renderSidebar } from './widgets/sidebar/sidebar.ts';
 import { renderCreatePostForm } from './features/create-post/create-post.ts';
 import { renderPostCard } from './features/post-card/post-card.ts';
-import { Post } from './entities/post/post.ts';
+import { Post, type PostDTO } from './entities/post/post.ts';
 
 import { SaveData } from './shared/lib/storage.ts';
 import { debounce } from './shared/lib/utils.ts';
@@ -200,30 +200,46 @@ const postModal = document.getElementById('post-modal-overlay')!;
     document.getElementById('cancel-post')?.addEventListener('click', () => togglePostModal(false));
 
     const form = document.getElementById('create-post-form') as HTMLFormElement;
+
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(form);
 
+        const imageInput = form.querySelector('input[name="imageFile"]') as HTMLInputElement;
+        const imageLink = formData.get('imageLink') as string;
+        let finalImage: string | null = imageLink || null;
+
+        if (imageInput.files?.[0]) {
+            finalImage = await convertFileToBase64(imageInput.files[0]); 
+        }
+
+        const tagText = formData.get('tags') as string;
+        const categoryId = await getCategoryIdByName(tagText.split(',')[0]);
+
         const title = formData.get('title') as string;
         const content = formData.get('content') as string;
-        const categoryid = 1; 
 
         try {
-            const newPost = await ApiClient.request<any>('/posts', {
-                method: 'PUT',
-                body: JSON.stringify({ title, content, categoryid })
-            });
+            const serverPost = await ApiService.Posts.create(title, content, categoryId);
 
-            allPosts.unshift(newPost);
-            savePostsToLocalStorage();
+            const hybridPost: PostDTO = {
+                ...serverPost,
+                localImage: finalImage
+            };
+
+            allPosts.unshift(hybridPost);
+            savePostsToLocalStorage(); 
+            
             updatePostList(true);
-            togglePostModal(false);
+            document.getElementById('post-modal-overlay')?.classList.add('hidden');
             form.reset();
+            
         } 
         catch (error) {
-            alert("Ошибка при создании поста! Проверьте авторизацию.");
+            alert("Ошибка при создании поста! Проверьте авторизацию или ключ.");
         }
     });
+
 
     const loginModal = document.getElementById('login-modal-overlay')!;
     const toggleLoginModal = (show: boolean) => loginModal.classList.toggle('hidden', !show);
@@ -231,30 +247,64 @@ const postModal = document.getElementById('post-modal-overlay')!;
     document.getElementById('btn-login')?.addEventListener('click', () => toggleLoginModal(true));
     document.getElementById('close-login-modal')?.addEventListener('click', () => toggleLoginModal(false));
 
-    const loginForm = document.getElementById('login-form') as HTMLFormElement;
-    loginForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(loginForm);
-        const login = formData.get('login') as string;
-        const password = formData.get('password') as string;
-        const apikey = formData.get('apikey') as string;
+    const tabLogin = document.getElementById('tab-login')!;
+    const tabReg = document.getElementById('tab-register')!;
+    const authForm = document.getElementById('auth-form') as HTMLFormElement;
+    const regForm = document.getElementById('register-form') as HTMLFormElement;
 
-        if (apikey) localStorage.setItem('api_key', apikey);
+    const switchTab = (mode: 'login' | 'reg') => {
+        if (mode === 'login') {
+            authForm.classList.remove('hidden');
+            regForm.classList.add('hidden');
+            tabLogin.className = "flex-1 p-3 font-black uppercase text-sm bg-yellow-400 text-black border-r-4 border-black transition-all";
+            tabReg.className = "flex-1 p-3 font-black uppercase text-sm bg-black text-white hover:bg-zinc-800 transition-all";
+        } 
+        else {
+            regForm.classList.remove('hidden');
+            authForm.classList.add('hidden');
+            tabReg.className = "flex-1 p-3 font-black uppercase text-sm bg-yellow-400 text-black transition-all";
+            tabLogin.className = "flex-1 p-3 font-black uppercase text-sm bg-black text-white border-r-4 border-black hover:bg-zinc-800 transition-all";
+        }
+    };
+
+    tabLogin.onclick = () => switchTab('login');
+    tabReg.onclick = () => switchTab('reg');
+
+    authForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const data = new FormData(authForm);
+        const login = data.get('login') as string;
+        const password = data.get('password') as string;
 
         try {
-            const token = await ApiClient.request<string>('/users/auth', {
-                method: 'POST',
-                body: JSON.stringify({ login, password })
-            });
+            const token = await ApiService.Users.auth(login, password);
             localStorage.setItem('jwt_token', token);
-            alert("Успешный вход!");
-            toggleLoginModal(false);
-            loginForm.reset();
+            alert("Вход выполнен!");
+            location.reload(); 
         } 
-        catch (error) {
-            alert("Неверный логин или пароль!");
+        catch (err) {
+            alert("Ошибка входа! Проверьте данные.");
         }
-    });
+    };
+
+    regForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const data = new FormData(regForm);
+        try {
+            await ApiService.Users.register(
+                data.get('login') as string,
+                data.get('email') as string,
+                data.get('password') as string,
+                data.get('bio') as string
+            );
+            alert("Регистрация завершена! Теперь войдите.");
+            switchTab('login');
+            regForm.reset();
+        } 
+        catch (err) {
+            alert("Ошибка регистрации! Логин или Email может быть занят.");
+        }
+    };
 
     const commentModal = document.getElementById('comment-modal-overlay')!;
     const commentTextarea = document.getElementById('comment-textarea') as HTMLTextAreaElement;
@@ -344,6 +394,17 @@ const convertFileToBase64 = (file: File): Promise<string> => {
         reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result as string);
     });
+};
+
+const getCategoryIdByName = async (name: string): Promise<number> => {
+    try {
+        const categories = await ApiService.Categories.getAll();
+        const found = categories.find(c => c.name.toLowerCase() === name.toLowerCase().trim());
+        return found ? found.id : 1; 
+    } 
+    catch {
+        return 1;
+    }
 };
 
 (window as any).likePost = (id: number) => {

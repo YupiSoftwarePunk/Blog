@@ -38,10 +38,8 @@ export function showConfirmDelete(postId: string | number, postElement: HTMLElem
 
     yesBtn.onclick = async () => {
         try {
-            // 1. Отправляем запрос на сервер
             await ApiClient.request(`/posts/${postId}`, { method: 'DELETE' });
 
-            // 2. Если успешно, удаляем из UI
             postElement.classList.add('translate-x-full', 'opacity-0');
             setTimeout(() => {
                 postElement.remove();
@@ -50,7 +48,8 @@ export function showConfirmDelete(postId: string | number, postElement: HTMLElem
                 storage.set('dynamic_posts', updatedDynamic);
                 confirmOverlay.remove();
             }, 300);
-        } catch (error) {
+        } 
+        catch (error) {
             console.error("Ошибка при удалении поста:", error);
             alert("Не удалось удалить пост. Проверьте права доступа.");
             confirmOverlay.remove();

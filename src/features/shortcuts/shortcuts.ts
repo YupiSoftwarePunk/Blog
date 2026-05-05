@@ -25,6 +25,9 @@ export function initKeyboardShortcuts(storage: SaveData): void {
                 modal.remove();
             });
 
+            const logReg = document.getElementById('login-modal-overlay');
+            if (logReg) logReg.classList.add('hidden');
+
             if (document.activeElement instanceof HTMLElement) {
                 document.activeElement.blur();
             }

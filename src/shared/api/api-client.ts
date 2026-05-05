@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:5000/api';
+const BASE_URL = 'http://localhost:8080';
 
 export class ApiClient {
     private static getApiKey() { return localStorage.getItem('api_key'); }
