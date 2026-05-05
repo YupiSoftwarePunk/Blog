@@ -1,3 +1,5 @@
+import { type CommentDTO } from '../comment/comment';
+
 export class Post {
     public title: string;
     public content: string;
@@ -27,4 +29,17 @@ export class Post {
             image: this.image
         };
     }
+}
+
+
+export interface PostDTO {
+    id: number;
+    title: string;
+    content: string;
+    authorLogin: string;
+    categoryName: string | null;
+    createdAt: string;
+    updatedAt: string;
+    likesCount: number;
+    comments: CommentDTO[];
 }

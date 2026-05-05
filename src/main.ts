@@ -14,9 +14,9 @@ import { showConfirmDelete } from './features/delete-post/delete-post.ts';
 import { renderFooter } from './widgets/footer/footer.ts';
 import { applyFilters, updateTagCloud, initFilterLogic} from './features/tag-filter/tag-filter.ts';
 import { initSearchLogic, applyHighlighting, getSearchQuery } from './features/post-search/post-search.ts';
-import { PostService } from './shared/api/post-service.ts';
 import { ApiClient } from './shared/api/api-client.ts';
 import { renderLoginForm } from './features/auth/login-form.ts';
+import { ApiService } from './shared/api/api-service.ts';
 
 const blogStorage = new SaveData('Blog_');
 
@@ -66,8 +66,6 @@ const savePostsToLocalStorage = () => {
 
 const fetchPostsFromApi = async () => {
     try {
-        // Получаем все посты с бекенда. 
-        // ВАЖНО: бекенд возвращает DTO (id, title, authorLogin, categoryName, likesCount). 
         const apiPosts = await ApiClient.request<any[]>('/posts/getall', {
             method: 'POST',
             body: JSON.stringify({ page: 1, limit: 100, category: "" })
@@ -75,10 +73,11 @@ const fetchPostsFromApi = async () => {
         
         if (apiPosts && apiPosts.length > 0) {
             allPosts = apiPosts;
-            savePostsToLocalStorage(); // Кэшируем
-            updatePostList(true); // Перерисовываем
+            savePostsToLocalStorage();
+            updatePostList(true);
         }
-    } catch (error) {
+    } 
+    catch (error) {
         console.warn("Не удалось получить свежие данные, используем кэш LocalStorage.");
     }
 };
@@ -189,11 +188,9 @@ const initApp = () => {
     const interactions = setupPostInteractions();
     if (interactions) refreshAttributes = interactions.refreshPostAttributes;
 
-    // Первичный рендер из кэша и запуск Observer
     updatePostList();
     setupIntersectionObserver();
 
-    // 2. ФОНОВЫЙ ЗАПРОС К API ДЛЯ АКТУАЛИЗАЦИИ
     fetchPostsFromApi();
 
 const postModal = document.getElementById('post-modal-overlay')!;
@@ -206,15 +203,12 @@ const postModal = document.getElementById('post-modal-overlay')!;
     form?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(form);
-        
-        // Берем только то, что ждет сервер. Картинки и теги игнорируем!
+
         const title = formData.get('title') as string;
         const content = formData.get('content') as string;
-        // Категорию пока хардкодим, так как в интерфейсе формы ее нет
         const categoryid = 1; 
 
         try {
-            // Отправляем на бекенд
             const newPost = await ApiClient.request<any>('/posts', {
                 method: 'PUT',
                 body: JSON.stringify({ title, content, categoryid })
@@ -225,16 +219,15 @@ const postModal = document.getElementById('post-modal-overlay')!;
             updatePostList(true);
             togglePostModal(false);
             form.reset();
-        } catch (error) {
+        } 
+        catch (error) {
             alert("Ошибка при создании поста! Проверьте авторизацию.");
         }
     });
 
-    // --- ЛОГИКА АВТОРИЗАЦИИ (Интеграция с API) ---
     const loginModal = document.getElementById('login-modal-overlay')!;
     const toggleLoginModal = (show: boolean) => loginModal.classList.toggle('hidden', !show);
-    
-    // ДОБАВЬ В header.ts КНОПКУ С id="btn-login" ЧТОБЫ ЭТО РАБОТАЛО
+
     document.getElementById('btn-login')?.addEventListener('click', () => toggleLoginModal(true));
     document.getElementById('close-login-modal')?.addEventListener('click', () => toggleLoginModal(false));
 
@@ -257,12 +250,12 @@ const postModal = document.getElementById('post-modal-overlay')!;
             alert("Успешный вход!");
             toggleLoginModal(false);
             loginForm.reset();
-        } catch (error) {
+        } 
+        catch (error) {
             alert("Неверный логин или пароль!");
         }
     });
 
-    // --- КОММЕНТАРИИ И ПРОЧЕЕ ---
     const commentModal = document.getElementById('comment-modal-overlay')!;
     const commentTextarea = document.getElementById('comment-textarea') as HTMLTextAreaElement;
 
@@ -278,22 +271,18 @@ const postModal = document.getElementById('post-modal-overlay')!;
 
         if (text) {
             try {
-                // Отправляем комментарий на бекенд (AuthorId пока хардкод 1)
-                await ApiClient.request('/posts/comments', {
-                    method: 'PUT',
-                    body: JSON.stringify({ content: text, postId: currentCommentPostId, authorId: 1 })
-                });
+                const newComment = await ApiService.Comments.create(text, currentCommentPostId, 1);
 
-                // Чтобы не перезапрашивать весь список, локально добавляем коммент для UI
                 const post = allPosts.find(p => p.id === currentCommentPostId);
                 if (post) {
                     if (!post.comments) post.comments = [];
-                    post.comments.push({ content: text, authorLogin: "Вы", createdAt: new Date().toISOString() });
+                    post.comments.push(newComment); 
                     savePostsToLocalStorage();
                     updatePostList();
                 }
                 closeCommentModal();
-            } catch (error) {
+            } 
+            catch (error) {
                 alert("Ошибка! Вы авторизованы?");
             }
         }
@@ -360,9 +349,9 @@ const convertFileToBase64 = (file: File): Promise<string> => {
 (window as any).likePost = (id: number) => {
     const post = allPosts.find(p => p.id === id);
     if (post) {
-        post.views = (parseInt(post.views) + 1).toString();
+        post.likesCount = (parseInt(post.likesCount) + 1).toString();
         const counter = document.getElementById(`likes-${id}`);
-        if (counter) counter.innerText = post.views;
+        if (counter) counter.innerText = post.likesCount;
         savePostsToLocalStorage();
     }
 };

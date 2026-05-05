@@ -1,13 +1,9 @@
-// shared/api/apiClient.ts
-
 const BASE_URL = 'http://localhost:5000/api';
 
 export class ApiClient {
-    // Получаем ключи из localStorage (их нужно туда сохранить после авторизации)
     private static getApiKey() { return localStorage.getItem('api_key'); }
     private static getJwtToken() { return localStorage.getItem('jwt_token'); }
 
-    // Универсальный метод для отправки запросов
     static async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -31,7 +27,6 @@ export class ApiClient {
                 throw new Error(`Ошибка API: ${response.status} - ${errorData}`);
             }
 
-            // Некоторые эндпоинты (например удаление) могут не возвращать JSON
             const text = await response.text();
             return (text ? JSON.parse(text) : null) as T;
         } 

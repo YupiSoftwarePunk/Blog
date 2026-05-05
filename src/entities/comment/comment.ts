@@ -11,3 +11,11 @@ export class Comment {
         this.date = new Date();
     }
 }
+
+export interface CommentDTO {
+    id: number;
+    content: string;
+    authorLogin: string;
+    createdAt: string;
+    updatedAt: string;
+}
