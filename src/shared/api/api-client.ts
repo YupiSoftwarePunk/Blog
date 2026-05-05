@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:8080';
+const BASE_URL = 'http://localhost:8080/api';
 
 export class ApiClient {
     private static getApiKey() { return localStorage.getItem('api_key'); }
@@ -28,7 +28,12 @@ export class ApiClient {
             }
 
             const text = await response.text();
-            return (text ? JSON.parse(text) : null) as T;
+            try {
+                return (text ? JSON.parse(text) : null) as T;
+            } 
+            catch (e) {
+                return text as unknown as T;
+            }
         } 
         catch (error) {
             console.error(`[API Error] ${endpoint}:`, error);

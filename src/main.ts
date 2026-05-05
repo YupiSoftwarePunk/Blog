@@ -66,19 +66,24 @@ const savePostsToLocalStorage = () => {
 
 const fetchPostsFromApi = async () => {
     try {
-        const apiPosts = await ApiClient.request<any[]>('/posts/getall', {
-            method: 'POST',
-            body: JSON.stringify({ page: 1, limit: 100, category: "" })
-        });
-        
-        if (apiPosts && apiPosts.length > 0) {
-            allPosts = apiPosts;
+        const apiPosts = await ApiService.Posts.getAll(1, 20);
+        const savedPosts = blogStorage.get<any[]>('dynamic_posts') || [];
+
+        if (apiPosts) {
+            allPosts = apiPosts.map(apiPost => {
+                const localMatch = savedPosts.find(p => p.id === apiPost.id);
+                return {
+                    ...apiPost,
+                    localImage: localMatch?.localImage || apiPost.localImage
+                };
+            });
+            
             savePostsToLocalStorage();
             updatePostList(true);
         }
     } 
     catch (error) {
-        console.warn("Не удалось получить свежие данные, используем кэш LocalStorage.");
+        console.warn("Используем кэш");
     }
 };
 
@@ -214,7 +219,18 @@ const postModal = document.getElementById('post-modal-overlay')!;
         }
 
         const tagText = formData.get('tags') as string;
-        const categoryId = await getCategoryIdByName(tagText.split(',')[0]);
+        const tagName = tagText.split(',')[0].trim();
+        let categoryId = await getCategoryIdByName(tagName);
+
+        if (tagName && categoryId === 1) {
+            try {
+                const newCat = await ApiService.Categories.create(tagName, tagName.toLowerCase());
+                categoryId = newCat.id;
+            } 
+            catch (e) {
+                console.warn("Не удалось создать категорию, используем дефолт");
+            }
+        }
 
         const title = formData.get('title') as string;
         const content = formData.get('content') as string;
@@ -407,13 +423,20 @@ const getCategoryIdByName = async (name: string): Promise<number> => {
     }
 };
 
-(window as any).likePost = (id: number) => {
-    const post = allPosts.find(p => p.id === id);
-    if (post) {
-        post.likesCount = (parseInt(post.likesCount) + 1).toString();
-        const counter = document.getElementById(`likes-${id}`);
-        if (counter) counter.innerText = post.likesCount;
-        savePostsToLocalStorage();
+(window as any).likePost = async (id: number) => {
+    try {
+        await ApiService.Posts.toggleLike(id); 
+
+        const post = allPosts.find(p => p.id === id);
+        if (post) {
+            post.likesCount = (Number(post.likesCount) + 1);
+            const counter = document.getElementById(`likes-${id}`);
+            if (counter) counter.innerText = post.likesCount.toString();
+            savePostsToLocalStorage();
+        }
+    } 
+    catch (error) {
+        alert("Не удалось поставить лайк. Вы вошли в систему?");
     }
 };
 
