@@ -4,19 +4,18 @@ import { renderPostList } from './widgets/post-list/post-list.ts';
 import { renderSidebar } from './widgets/sidebar/sidebar.ts';
 import { renderCreatePostForm } from './features/create-post/create-post.ts';
 import { renderPostCard } from './features/post-card/post-card.ts';
-import { Post, type PostDTO } from './entities/post/post.ts';
+import { type PostDTO } from './entities/post/post.ts';
 
 import { SaveData } from './shared/lib/storage.ts';
-import { debounce } from './shared/lib/utils.ts';
 import { initFormatting } from './features/formatting/formatterLogic.ts';
 import { initKeyboardShortcuts, setupPostInteractions } from './features/shortcuts/shortcuts.ts';
 import { showConfirmDelete } from './features/delete-post/delete-post.ts';
 import { renderFooter } from './widgets/footer/footer.ts';
 import { applyFilters, updateTagCloud, initFilterLogic} from './features/tag-filter/tag-filter.ts';
 import { initSearchLogic, applyHighlighting, getSearchQuery } from './features/post-search/post-search.ts';
-import { ApiClient } from './shared/api/api-client.ts';
 import { renderLoginForm } from './features/auth/login-form.ts';
 import { ApiService } from './shared/api/api-service.ts';
+import {createLike} from './features/toggle-like/post-like.ts';
 
 const blogStorage = new SaveData('Blog_');
 
@@ -64,16 +63,27 @@ const savePostsToLocalStorage = () => {
 //     }
 // };
 
+let myLikes: number[] = blogStorage.get<number[]>('my_liked_posts') || [];
+(window as any).myLikes = blogStorage.get<number[]>('my_liked_posts') || [];
+
+const saveMyLikes = () => {
+    blogStorage.set('my_liked_posts', myLikes);
+};
+
 const fetchPostsFromApi = async () => {
     try {
-        const apiPosts = await ApiService.Posts.getAll(1, 20);
+        const apiPosts = await ApiService.Posts.getAll(1, 50);
         const savedPosts = blogStorage.get<any[]>('dynamic_posts') || [];
 
         if (apiPosts) {
             allPosts = apiPosts.map(apiPost => {
                 const localMatch = savedPosts.find(p => p.id === apiPost.id);
+                
                 return {
                     ...apiPost,
+                    comments: (apiPost.comments && apiPost.comments.length > 0) 
+                        ? apiPost.comments 
+                        : (localMatch?.comments || []),
                     localImage: localMatch?.localImage || apiPost.localImage
                 };
             });
@@ -83,7 +93,7 @@ const fetchPostsFromApi = async () => {
         }
     } 
     catch (error) {
-        console.warn("Используем кэш");
+        console.warn("Сервер недоступен, работаем с кэшем");
     }
 };
 
@@ -96,7 +106,17 @@ const updatePostList = (reset = false) => {
     if (listElement) {
         const visiblePosts = allPosts.slice(0, currentVisibleCount);
         listElement.innerHTML = visiblePosts.map(post => renderPostCard(post)).join('');
-        
+
+        visiblePosts.forEach(post => {
+            const container = document.getElementById(`like-placeholder-${post.id}`);
+            if (container) {
+                const isLiked = myLikes.includes(post.id);
+
+                container.innerHTML = ''; 
+                container.appendChild(createLike(post, isLiked));
+            }
+        });
+
         updateTagCloud(allPosts);
         applyFilters();
         applyHighlighting();
@@ -337,19 +357,26 @@ const postModal = document.getElementById('post-modal-overlay')!;
 
         if (text) {
             try {
+                // 1. Отправляем на сервер (authorId временно 1, пока нет системы профиля)
                 const newComment = await ApiService.Comments.create(text, currentCommentPostId, 1);
 
-                const post = allPosts.find(p => p.id === currentCommentPostId);
-                if (post) {
-                    if (!post.comments) post.comments = [];
-                    post.comments.push(newComment); 
+                // 2. Находим пост в локальном массиве
+                const postIndex = allPosts.findIndex(p => p.id === currentCommentPostId);
+                if (postIndex !== -1) {
+                    if (!allPosts[postIndex].comments) allPosts[postIndex].comments = [];
+                    
+                    // Добавляем полноценный объект комментария из API
+                    allPosts[postIndex].comments.push(newComment); 
+                    
+                    // 3. Синхронизируем и перерисовываем
                     savePostsToLocalStorage();
-                    updatePostList();
+                    updatePostList(); 
                 }
                 closeCommentModal();
+                commentTextarea.value = '';
             } 
             catch (error) {
-                alert("Ошибка! Вы авторизованы?");
+                alert("Не удалось отправить комментарий. Проверьте авторизацию.");
             }
         }
     });
@@ -423,17 +450,42 @@ const getCategoryIdByName = async (name: string): Promise<number> => {
     }
 };
 
+(window as any).updateGlobalPostState = (postId: number, updates: Partial<PostDTO>) => {
+    const postIndex = allPosts.findIndex(p => p.id === postId);
+    if (postIndex !== -1) {
+        allPosts[postIndex] = { ...allPosts[postIndex], ...updates };
+        savePostsToLocalStorage();
+    }
+};
+
 (window as any).likePost = async (id: number) => {
     try {
-        await ApiService.Posts.toggleLike(id); 
+        const newCountStr = await ApiService.Posts.toggleLike(id);
+        const newCount = parseInt(newCountStr);
 
-        const post = allPosts.find(p => p.id === id);
-        if (post) {
-            post.likesCount = (Number(post.likesCount) + 1);
-            const counter = document.getElementById(`likes-${id}`);
-            if (counter) counter.innerText = post.likesCount.toString();
-            savePostsToLocalStorage();
+        let myLikes = (window as any).myLikes;
+        if (myLikes.includes(id)) {
+            myLikes = myLikes.filter((itemId: number) => itemId !== id);
         }
+        else {
+            myLikes.push(id);
+        }
+        (window as any).myLikes = myLikes;
+        blogStorage.set('my_liked_posts', myLikes);
+
+        const btn = document.getElementById(`like-btn-${id}`);
+        const counter = document.getElementById(`likes-${id}`);
+        
+        if (btn) {
+            const isNowLiked = myLikes.includes(id);
+        }
+
+        if (counter) {
+            counter.innerText = newCount.toString();
+        }
+
+        (window as any).updateGlobalPostState(id, { likesCount: newCount });
+
     } 
     catch (error) {
         alert("Не удалось поставить лайк. Вы вошли в систему?");
