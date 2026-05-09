@@ -36,6 +36,30 @@ const syncFormatting = () => {
     initFormatting(postsData);
 };
 
+const getLocalImagesMap = () => blogStorage.get<Record<number, string>>('post_images_map') || {};
+const saveImageToLocal = (postId: number, base64: string) => {
+    const map = getLocalImagesMap();
+    map[postId] = base64;
+    blogStorage.set('post_images_map', map);
+};
+
+const TAGS_MAP_KEY = 'post_tags_map';
+const IMAGES_MAP_KEY = 'post_images_map';
+
+const getLocalTags = () => blogStorage.get<Record<number, string[]>>(TAGS_MAP_KEY) || {};
+const getLocalImages = () => blogStorage.get<Record<number, string>>(IMAGES_MAP_KEY) || {};
+
+const saveMetadata = (postId: number, tags: string[], image: string | null) => {
+    const tagsMap = getLocalTags();
+    const imagesMap = getLocalImages();
+    
+    if (tags.length) tagsMap[postId] = tags;
+    if (image) imagesMap[postId] = image;
+    
+    blogStorage.set(TAGS_MAP_KEY, tagsMap);
+    blogStorage.set(IMAGES_MAP_KEY, imagesMap);
+};
+
 const savePostsToLocalStorage = () => {
     blogStorage.set('dynamic_posts', allPosts);
 };
@@ -73,27 +97,21 @@ const saveMyLikes = () => {
 const fetchPostsFromApi = async () => {
     try {
         const apiPosts = await ApiService.Posts.getAll(1, 50);
-        const savedPosts = blogStorage.get<any[]>('dynamic_posts') || [];
+        const imagesMap = getLocalImagesMap();
 
         if (apiPosts) {
-            allPosts = apiPosts.map(apiPost => {
-                const localMatch = savedPosts.find(p => p.id === apiPost.id);
-                
-                return {
-                    ...apiPost,
-                    comments: (apiPost.comments && apiPost.comments.length > 0) 
-                        ? apiPost.comments 
-                        : (localMatch?.comments || []),
-                    localImage: localMatch?.localImage || apiPost.localImage
-                };
-            });
+            allPosts = apiPosts.map(apiPost => ({
+                ...apiPost,
+                localImage: imagesMap[apiPost.id] || apiPost.localImage || null,
+            }));
             
             savePostsToLocalStorage();
             updatePostList(true);
         }
     } 
     catch (error) {
-        console.warn("Сервер недоступен, работаем с кэшем");
+        console.warn("Сервер недоступен, показываем кэш из localStorage");
+        updatePostList(true);
     }
 };
 
@@ -230,49 +248,36 @@ const postModal = document.getElementById('post-modal-overlay')!;
         e.preventDefault();
         const formData = new FormData(form);
 
+        const tagString = formData.get('tags') as string;
+        const tagsArray = tagString.split(',').map(t => t.trim().toLowerCase()).filter(t => t);
+
         const imageInput = form.querySelector('input[name="imageFile"]') as HTMLInputElement;
         const imageLink = formData.get('imageLink') as string;
-        let finalImage: string | null = imageLink || null;
-
+        let base64Image: string | null = imageLink || null;
         if (imageInput.files?.[0]) {
-            finalImage = await convertFileToBase64(imageInput.files[0]); 
+            base64Image = await convertFileToBase64(imageInput.files[0]);
         }
 
-        const tagText = formData.get('tags') as string;
-        const tagName = tagText.split(',')[0].trim();
-        let categoryId = await getCategoryIdByName(tagName);
-
-        if (tagName && categoryId === 1) {
-            try {
-                const newCat = await ApiService.Categories.create(tagName, tagName.toLowerCase());
-                categoryId = newCat.id;
-            } 
-            catch (e) {
-                console.warn("Не удалось создать категорию, используем дефолт");
-            }
-        }
-
-        const title = formData.get('title') as string;
-        const content = formData.get('content') as string;
+        const categoryName = tagsArray[0] || "Общее";
+        const categoryId = await getCategoryIdByName(categoryName);
 
         try {
-            const serverPost = await ApiService.Posts.create(title, content, categoryId);
+            const serverPost = await ApiService.Posts.create(
+                formData.get('title') as string,
+                formData.get('content') as string,
+                categoryId
+            );
+            saveMetadata(serverPost.id, tagsArray, base64Image);
 
-            const hybridPost: PostDTO = {
-                ...serverPost,
-                localImage: finalImage
-            };
-
-            allPosts.unshift(hybridPost);
-            savePostsToLocalStorage(); 
-            
+            allPosts.unshift(serverPost);
+            savePostsToLocalStorage();
             updatePostList(true);
+            
             document.getElementById('post-modal-overlay')?.classList.add('hidden');
             form.reset();
-            
         } 
-        catch (error) {
-            alert("Ошибка при создании поста! Проверьте авторизацию или ключ.");
+        catch (err) {
+            alert("Ошибка при сохранении поста на сервере");
         }
     });
 
@@ -357,18 +362,13 @@ const postModal = document.getElementById('post-modal-overlay')!;
 
         if (text) {
             try {
-                // 1. Отправляем на сервер (authorId временно 1, пока нет системы профиля)
                 const newComment = await ApiService.Comments.create(text, currentCommentPostId, 1);
-
-                // 2. Находим пост в локальном массиве
                 const postIndex = allPosts.findIndex(p => p.id === currentCommentPostId);
                 if (postIndex !== -1) {
                     if (!allPosts[postIndex].comments) allPosts[postIndex].comments = [];
-                    
-                    // Добавляем полноценный объект комментария из API
+
                     allPosts[postIndex].comments.push(newComment); 
-                    
-                    // 3. Синхронизируем и перерисовываем
+
                     savePostsToLocalStorage();
                     updatePostList(); 
                 }
@@ -511,6 +511,31 @@ const getCategoryIdByName = async (name: string): Promise<number> => {
         updatePostList();
     }
 };
+
+(window as any).deleteComment = async (commentId: number, postId: number) => {
+    if (!confirm('Удалить этот комментарий безвозвратно?')) return;
+
+    try {
+        await ApiService.Comments.delete(commentId);
+
+        const postIndex = allPosts.findIndex(p => p.id === postId);
+        if (postIndex !== -1) {
+            allPosts[postIndex].comments = allPosts[postIndex].comments.filter(
+                (c: any) => c.id !== commentId
+            );
+
+            savePostsToLocalStorage();
+
+            updatePostList();
+        }
+
+        console.log(`Мнение #${commentId} стерто из истории.`);
+    } catch (error) {
+        console.error(error);
+        alert("Не удалось удалить комментарий. Возможно, у вас недостаточно прав.");
+    }
+};
+
 
 (window as any).initFormatting = initFormatting;
 

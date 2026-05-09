@@ -5,6 +5,16 @@ export const renderPostCard = (post: any): string => {
 
     const isLiked = (window as any).myLikes?.includes(post.id);
 
+    const localTagsMap = (JSON.parse(localStorage.getItem('Blog_post_tags_map') || '{}'));
+    const localImagesMap = (JSON.parse(localStorage.getItem('Blog_post_images_map') || '{}'));
+    
+    const tags: string[] = localTagsMap[post.id] || [];
+    const image: string | null = localImagesMap[post.id] || null;
+
+    const searchTags = [post.categoryName, ...tags]
+        .filter(Boolean)
+        .map(t => t!.toLowerCase());
+
     return `
     <li class="focusable-post post-card bg-white border-4 border-black p-2 mb-4 outline-none shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] 
         transition-all focus:ring-4 focus:ring-purple-600 focus:shadow-none focus:translate-x-1 focus:translate-y-1" 
