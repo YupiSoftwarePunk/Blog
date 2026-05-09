@@ -99,11 +99,20 @@ const fetchPostsFromApi = async () => {
         const apiPosts = await ApiService.Posts.getAll(1, 50);
         const imagesMap = getLocalImagesMap();
 
+        const savedPosts = blogStorage.get<any[]>('dynamic_posts') || [];
+
         if (apiPosts) {
-            allPosts = apiPosts.map(apiPost => ({
-                ...apiPost,
-                localImage: imagesMap[apiPost.id] || apiPost.localImage || null,
-            }));
+            allPosts = apiPosts.map(apiPost => {
+                const localMatch = savedPosts.find(p => p.id === apiPost.id);
+                
+                return {
+                    ...apiPost,
+                    comments: (apiPost.comments && apiPost.comments.length > 0) 
+                            ? apiPost.comments 
+                            : (localMatch?.comments || []),
+                    localImage: imagesMap[apiPost.id] || apiPost.localImage || null,
+                };
+            });
             
             savePostsToLocalStorage();
             updatePostList(true);
@@ -363,9 +372,12 @@ const postModal = document.getElementById('post-modal-overlay')!;
         if (text) {
             try {
                 const newComment = await ApiService.Comments.create(text, currentCommentPostId, 1);
+                
                 const postIndex = allPosts.findIndex(p => p.id === currentCommentPostId);
                 if (postIndex !== -1) {
-                    if (!allPosts[postIndex].comments) allPosts[postIndex].comments = [];
+                    if (!allPosts[postIndex].comments) {
+                        allPosts[postIndex].comments = [];
+                    }
 
                     allPosts[postIndex].comments.push(newComment); 
 
