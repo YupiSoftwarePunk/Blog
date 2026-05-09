@@ -542,12 +542,83 @@ const getCategoryIdByName = async (name: string): Promise<number> => {
         }
 
         console.log(`Мнение #${commentId} стерто из истории.`);
-    } catch (error) {
+    } 
+    catch (error) {
         console.error(error);
         alert("Не удалось удалить комментарий. Возможно, у вас недостаточно прав.");
     }
 };
 
+
+async function getOrCreateCategoryId(tagName: string): Promise<number> {
+    try {
+        const categories = await ApiService.Categories.getAll();
+        const existing = categories.find(c => c.name.toLowerCase() === tagName.toLowerCase().trim());
+        
+        if (existing) return existing.id;
+
+        const slug = tagName.toLowerCase().trim().replace(/\s+/g, '-');
+        const newCat = await ApiService.Categories.create(tagName, slug);
+        return newCat.id;
+    } 
+    catch (e) {
+        console.error("Ошибка категорий:", e);
+        return 1;
+    }
+}
+
+(window as any).deletePost = async (id: number) => {
+    if (!confirm('Удалить этот пост навсегда?')) return;
+
+    try {
+        await ApiService.Posts.delete(id);
+
+        const imagesMap = JSON.parse(localStorage.getItem('Blog_post_images_map') || '{}');
+        delete imagesMap[id];
+        localStorage.setItem('Blog_post_images_map', JSON.stringify(imagesMap));
+
+        allPosts = allPosts.filter(p => p.id !== id);
+        savePostsToLocalStorage();
+        (window as any).refreshAppUI();
+    } 
+    catch (error) {
+        alert("Не удалось удалить пост на сервере.");
+    }
+};
+
+(window as any).submitPost = async (formData: FormData) => {
+    const title = formData.get('title') as string;
+    const content = formData.get('content') as string;
+    const tagName = (formData.get('tags') as string) || "General";
+    const imageFile = formData.get('image') as File;
+
+    try {
+        const categoryId = await getOrCreateCategoryId(tagName);
+
+        const newPost = await ApiService.Posts.create(title, content, categoryId);
+
+        if (imageFile && imageFile.size > 0) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64 = e.target?.result as string;
+                const imagesMap = JSON.parse(localStorage.getItem('Blog_post_images_map') || '{}');
+                imagesMap[newPost.id] = base64;
+                localStorage.setItem('Blog_post_images_map', JSON.stringify(imagesMap));
+                (window as any).refreshAppUI();
+            };
+            reader.readAsDataURL(imageFile);
+        }
+
+        allPosts.unshift(newPost);
+        savePostsToLocalStorage();
+        (window as any).refreshAppUI();
+        return true;
+    } 
+    catch (e) {
+        alert("Ошибка при создании поста.");
+        return false;
+    }
+};
 
 (window as any).initFormatting = initFormatting;
 
