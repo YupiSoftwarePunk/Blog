@@ -1,5 +1,5 @@
 import { SaveData } from "../../shared/lib/storage";
-import { ApiClient } from "../../shared/api/api-client";
+import { ApiService } from "../../shared/api/api-service";  
 
 export function showConfirmDelete(postId: string | number, postElement: HTMLElement, storage: SaveData): void {
     const confirmOverlay = document.createElement('div');
@@ -38,7 +38,17 @@ export function showConfirmDelete(postId: string | number, postElement: HTMLElem
 
     yesBtn.onclick = async () => {
         try {
-            await ApiClient.request(`/posts/${postId}`, { method: 'DELETE' });
+            const numericId = typeof postId === 'string' ? parseInt(postId) : postId;
+
+            await ApiService.Posts.delete(numericId);
+
+            const imagesMap = JSON.parse(localStorage.getItem('Blog_post_images_map') || '{}');
+            delete imagesMap[numericId];
+            localStorage.setItem('Blog_post_images_map', JSON.stringify(imagesMap));
+
+            const tagsMap = JSON.parse(localStorage.getItem('Blog_post_tags_map') || '{}');
+            delete tagsMap[numericId];
+            localStorage.setItem('Blog_post_tags_map', JSON.stringify(tagsMap));
 
             postElement.classList.add('translate-x-full', 'opacity-0');
             setTimeout(() => {
@@ -46,6 +56,9 @@ export function showConfirmDelete(postId: string | number, postElement: HTMLElem
                 const currentDynamic = storage.get<any[]>('dynamic_posts') || [];
                 const updatedDynamic = currentDynamic.filter(p => String(p.id) !== String(postId));
                 storage.set('dynamic_posts', updatedDynamic);
+
+                if ((window as any).refreshAppUI) (window as any).refreshAppUI();
+                
                 confirmOverlay.remove();
             }, 300);
         } 

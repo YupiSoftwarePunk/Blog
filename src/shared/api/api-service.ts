@@ -58,7 +58,7 @@ export const ApiService = {
             ApiClient.request<PostDTO>('/posts', { method: 'PUT', body: JSON.stringify({ title, content, categoryid }) }),
         
         update: (id: number, title: string, content: string, categoryid: number) => 
-            ApiClient.request<PostDTO>(`/posts/${id}`, { method: 'POST', body: JSON.stringify({ title, content, categoryid }) }),
+            ApiClient.request<PostDTO>(`/posts/${id}`, { method: 'POST', body: JSON.stringify({ title, content, categoryid: String(categoryid) }) }),
         
         delete: (id: number) => 
             ApiClient.request<PostDTO>(`/posts/${id}`, { method: 'DELETE' }),
