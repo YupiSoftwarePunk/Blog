@@ -3,6 +3,10 @@ import { Post } from "../../entities/post/post";
 import { TextFormatter } from "../../shared/lib/utils";
 import { ApiService } from "../../shared/api/api-service";
 
+const TAGS_MAP_KEY = 'post_tags_map';
+const IMAGES_MAP_KEY = 'post_images_map';
+const DYNAMIC_POSTS_KEY = 'dynamic_posts';
+
 const calculateStats = (content: string) => {
     const symbols = content.length;
     const words = content.trim() ? content.trim().split(/\s+/).length : 0;
@@ -33,7 +37,7 @@ async function getOrCreateCategoryId(tagName: string): Promise<number> {
         return newCat.id;
     } 
     catch (e) {
-        return 1; // Дефолтная категория
+        return 1;
     }
 }
 
@@ -41,9 +45,10 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
     const post = allPosts.find(p => String(p.id) === String(postId));
     if (!post) return;
 
-    // Достаем актуальные картинки и теги
-    const imagesMap = JSON.parse(localStorage.getItem('Blog_post_images_map') || '{}');
-    const tagsMap = JSON.parse(localStorage.getItem('Blog_post_tags_map') || '{}');
+    // Используем wrapper SaveData для получения данных
+    const imagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
+    const tagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
+    
     const localImage = imagesMap[postId] || post.localImage || '';
     const localTags = tagsMap[postId] || post.tags || [];
 
@@ -153,6 +158,7 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
         e.preventDefault();
         
         const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        const originalBtnText = submitBtn.textContent;
         submitBtn.textContent = "Сохранение...";
         submitBtn.disabled = true;
 
@@ -166,40 +172,43 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
 
         const imageInput = form.querySelector('input[name="imageFile"]') as HTMLInputElement;
         const imageLink = formData.get('imageLink') as string;
-        let finalImage = imageLink || null;
+
+        let finalImage: string | null = localImage; 
 
         if (imageInput.files?.[0]) {
             finalImage = await convertFileToBase64(imageInput.files[0]);
+        } 
+        else if (imageLink.trim() !== '') {
+            finalImage = imageLink.trim();
+        } 
+        else if (imageLink.trim() === '' && !localImage.startsWith('data:')) {
+            finalImage = null;
         }
 
         try {
             const categoryId = await getOrCreateCategoryId(categoryName);
-
-            // Отправляем изменения
+            // Серверное обновление
             const updatedPostServer = await ApiService.Posts.update(Number(postId), title, content, categoryId);
 
-            // БЛОК ЗАЩИТЫ: Если сервер кинул 400, а ApiClient вернул null
-            if (!updatedPostServer) {
-                throw new Error("Сервер отклонил запрос (400 Bad Request) или вернул пустой ответ.");
-            }
-
-            const currentImagesMap = JSON.parse(localStorage.getItem('Blog_post_images_map') || '{}');
+            // Работа с метаданными через SaveData
+            const currentImagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
             if (finalImage) currentImagesMap[postId] = finalImage;
             else delete currentImagesMap[postId];
-            localStorage.setItem('Blog_post_images_map', JSON.stringify(currentImagesMap));
+            storage.set(IMAGES_MAP_KEY, currentImagesMap);
 
-            const currentTagsMap = JSON.parse(localStorage.getItem('Blog_post_tags_map') || '{}');
+            const currentTagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
             currentTagsMap[postId] = tagsArray;
-            localStorage.setItem('Blog_post_tags_map', JSON.stringify(currentTagsMap));
+            storage.set(TAGS_MAP_KEY, currentTagsMap);
 
-            // Теперь мы точно знаем, что updatedPostServer существует
-            post.title = updatedPostServer.title;
-            post.content = updatedPostServer.content;
-            post.categoryName = updatedPostServer.categoryName;
+            // Обновляем объект в массиве (по ссылке)
+            post.title = updatedPostServer?.title || title;
+            post.content = updatedPostServer?.content || content;
+            post.categoryName = updatedPostServer?.categoryName || categoryName;
             post.tags = tagsArray;
             post.localImage = finalImage;
 
-            storage.set('dynamic_posts', allPosts);
+            // Синхронизируем весь список постов в localStorage
+            storage.set(DYNAMIC_POSTS_KEY, allPosts);
             
             updateCallback();
             close();
@@ -207,7 +216,7 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
         catch (err) {
             console.error("[Edit Error]:", err);
             alert("Ошибка сохранения на сервере. Проверьте данные и авторизацию.");
-            submitBtn.textContent = "Сохранить";
+            submitBtn.textContent = originalBtnText;
             submitBtn.disabled = false;
         }
     };

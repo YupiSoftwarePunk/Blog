@@ -98,6 +98,7 @@ const fetchPostsFromApi = async () => {
     try {
         const apiPosts = await ApiService.Posts.getAll(1, 50);
         const imagesMap = getLocalImagesMap();
+        const tagsMap = getLocalTags();
 
         const savedPosts = blogStorage.get<any[]>('dynamic_posts') || [];
 
@@ -111,6 +112,7 @@ const fetchPostsFromApi = async () => {
                             ? apiPost.comments 
                             : (localMatch?.comments || []),
                     localImage: imagesMap[apiPost.id] || apiPost.localImage || null,
+                    tags: tagsMap[apiPost.id] || localMatch?.tags || []
                 };
             });
             
