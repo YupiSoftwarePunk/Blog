@@ -45,7 +45,6 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
     const post = allPosts.find(p => String(p.id) === String(postId));
     if (!post) return;
 
-    // Используем wrapper SaveData для получения данных
     const imagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
     const tagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
     
@@ -186,38 +185,33 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
         }
 
         try {
-            const categoryId = await getOrCreateCategoryId(categoryName);
-            // Серверное обновление
-            const updatedPostServer = await ApiService.Posts.update(Number(postId), title, content, categoryId);
+        const categoryId = await getOrCreateCategoryId(categoryName);
 
-            // Работа с метаданными через SaveData
-            const currentImagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
-            if (finalImage) currentImagesMap[postId] = finalImage;
-            else delete currentImagesMap[postId];
-            storage.set(IMAGES_MAP_KEY, currentImagesMap);
+        await ApiService.Posts.update(Number(postId), title, content, categoryId);
 
-            const currentTagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
-            currentTagsMap[postId] = tagsArray;
-            storage.set(TAGS_MAP_KEY, currentTagsMap);
-
-            // Обновляем объект в массиве (по ссылке)
-            post.title = updatedPostServer?.title || title;
-            post.content = updatedPostServer?.content || content;
-            post.categoryName = updatedPostServer?.categoryName || categoryName;
-            post.tags = tagsArray;
-            post.localImage = finalImage;
-
-            // Синхронизируем весь список постов в localStorage
-            storage.set(DYNAMIC_POSTS_KEY, allPosts);
-            
-            updateCallback();
-            close();
-        } 
-        catch (err) {
-            console.error("[Edit Error]:", err);
-            alert("Ошибка сохранения на сервере. Проверьте данные и авторизацию.");
-            submitBtn.textContent = originalBtnText;
-            submitBtn.disabled = false;
+        const currentImagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
+        if (finalImage) {
+            currentImagesMap[postId] = finalImage;
+        } else {
+            delete currentImagesMap[postId];
         }
+        storage.set(IMAGES_MAP_KEY, currentImagesMap);
+
+        const currentTagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
+        currentTagsMap[postId] = tagsArray;
+        storage.set(TAGS_MAP_KEY, currentTagsMap);
+
+        post.title = title;
+        post.content = content;
+        post.tags = tagsArray;
+        post.localImage = finalImage;
+
+        storage.set('dynamic_posts', allPosts);
+
+        updateCallback();
+        close();
+    } catch (err) {
+        console.error("Ошибка обновления:", err);
+    }
     };
 }

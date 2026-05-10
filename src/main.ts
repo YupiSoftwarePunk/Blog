@@ -2,7 +2,7 @@ import './style.css'
 import { renderHeader } from './widgets/header/header.ts';
 import { renderPostList } from './widgets/post-list/post-list.ts';
 import { renderSidebar } from './widgets/sidebar/sidebar.ts';
-import { renderCreatePostForm } from './features/create-post/create-post.ts';
+import { handleCreatePost, renderCreatePostForm } from './features/create-post/create-post.ts';
 import { renderPostCard } from './features/post-card/post-card.ts';
 import { type PostDTO } from './entities/post/post.ts';
 
@@ -588,38 +588,23 @@ async function getOrCreateCategoryId(tagName: string): Promise<number> {
     }
 };
 
-(window as any).submitPost = async (formData: FormData) => {
-    const title = formData.get('title') as string;
-    const content = formData.get('content') as string;
-    const tagName = (formData.get('tags') as string) || "General";
-    const imageFile = formData.get('image') as File;
+(window as any).submitPost = async (event: Event) => {
+    event.preventDefault();
+    const form = event.target as HTMLFormElement;
 
-    try {
-        const categoryId = await getOrCreateCategoryId(tagName);
+    await handleCreatePost(form, blogStorage, async () => {
+        try {
+            const serverPosts = await ApiService.Posts.getAll(1, 50);
+            allPosts = serverPosts;
+            savePostsToLocalStorage();
+            (window as any).refreshAppUI();
 
-        const newPost = await ApiService.Posts.create(title, content, categoryId);
-
-        if (imageFile && imageFile.size > 0) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64 = e.target?.result as string;
-                const imagesMap = JSON.parse(localStorage.getItem('Blog_post_images_map') || '{}');
-                imagesMap[newPost.id] = base64;
-                localStorage.setItem('Blog_post_images_map', JSON.stringify(imagesMap));
-                (window as any).refreshAppUI();
-            };
-            reader.readAsDataURL(imageFile);
+            document.getElementById('post-modal-overlay')?.remove();
+        } 
+        catch (e) {
+            console.error("Ошибка обновления списка после создания", e);
         }
-
-        allPosts.unshift(newPost);
-        savePostsToLocalStorage();
-        (window as any).refreshAppUI();
-        return true;
-    } 
-    catch (e) {
-        alert("Ошибка при создании поста.");
-        return false;
-    }
+    });
 };
 
 (window as any).initFormatting = initFormatting;

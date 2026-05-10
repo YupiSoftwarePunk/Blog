@@ -1,3 +1,57 @@
+import { ApiService } from "../../shared/api/api-service";
+import { SaveData } from "../../shared/lib/storage";
+
+
+const IMAGES_MAP_KEY = 'post_images_map';
+const TAGS_MAP_KEY = 'post_tags_map';
+
+export async function handleCreatePost(form: HTMLFormElement, storage: SaveData, onSuccess: () => void) {
+    const formData = new FormData(form);
+    const title = formData.get('title') as string;
+    const content = formData.get('content') as string;
+    const tagsString = formData.get('tags') as string;
+    const imageFile = formData.get('imageFile') as File;
+
+    const tagsArray = tagsString.split(',').map(t => t.trim()).filter(t => t);
+    
+    try {
+        const categories = await ApiService.Categories.getAll();
+        const categoryName = tagsArray[0] || "Общее";
+        let category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+        
+        if (!category) {
+            category = await ApiService.Categories.create(categoryName, categoryName.toLowerCase());
+        }
+
+        const newPost = await ApiService.Posts.create(title, content, category.id);
+
+        if (newPost) {
+            if (imageFile && imageFile.size > 0) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const base64Image = reader.result as string;
+                    const imagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
+                    imagesMap[newPost.id] = base64Image;
+                    storage.set(IMAGES_MAP_KEY, imagesMap);
+                };
+                reader.readAsDataURL(imageFile);
+            }
+            
+            const tagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
+            tagsMap[newPost.id] = tagsArray;
+            storage.set(TAGS_MAP_KEY, tagsMap);
+
+            form.reset();
+            onSuccess();
+        }
+    } 
+    catch (error) {
+        console.error('Ошибка при создании поста:', error);
+        alert('Не удалось создать пост');
+    }
+}
+
+
 export const renderCreatePostForm = (): string => {
     return `
     <div id="post-modal-overlay" class="fixed inset-0 z-[1000] bg-black/10 flex items-center justify-center p-4 transition-all">
