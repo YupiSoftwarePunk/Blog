@@ -40,13 +40,30 @@ export function showConfirmDelete(postId: string | number, postElement: HTMLElem
         try {
             const numericId = typeof postId === 'string' ? parseInt(postId) : postId;
 
+            const tagsMapStr = localStorage.getItem('Blog_post_tags_map') || '{}';
+            const tagsMap = JSON.parse(tagsMapStr);
+            const postTags = tagsMap[numericId] || [];
+
+            if (postTags.length > 0) {
+                try {
+                    const categories = await ApiService.Categories.getAll();
+                    for (const tag of postTags) {
+                        const existingCat = categories.find(c => c.name.toLowerCase() === tag.toLowerCase());
+                        if (existingCat) {
+                            await ApiService.Categories.delete(existingCat.id).catch(() => {});
+                        }
+                    }
+                } 
+                catch (e) {
+                    console.warn("Ошибка при удалении тегов с сервера:", e);
+                }
+            }
             await ApiService.Posts.delete(numericId);
 
             const imagesMap = JSON.parse(localStorage.getItem('Blog_post_images_map') || '{}');
             delete imagesMap[numericId];
             localStorage.setItem('Blog_post_images_map', JSON.stringify(imagesMap));
 
-            const tagsMap = JSON.parse(localStorage.getItem('Blog_post_tags_map') || '{}');
             delete tagsMap[numericId];
             localStorage.setItem('Blog_post_tags_map', JSON.stringify(tagsMap));
 

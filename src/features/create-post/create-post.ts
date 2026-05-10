@@ -16,14 +16,29 @@ export async function handleCreatePost(form: HTMLFormElement, storage: SaveData,
     
     try {
         const categories = await ApiService.Categories.getAll();
-        const categoryName = tagsArray[0] || "Общее";
-        let category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-        
-        if (!category) {
-            category = await ApiService.Categories.create(categoryName, categoryName.toLowerCase());
+        let mainCategoryId = 1;
+
+        for (let i = 0; i < tagsArray.length; i++) {
+            const tagName = tagsArray[i];
+            const slug = tagName.toLowerCase().replace(/\s+/g, '-');
+            
+            let category = categories.find(c => c.name.toLowerCase() === tagName.toLowerCase());
+
+            if (!category) {
+                try {
+                    category = await ApiService.Categories.create(tagName, slug);
+                } 
+                catch (err) {
+                    console.warn(`Не удалось создать тег ${tagName} на сервере`);
+                }
+            }
+
+            if (i === 0 && category) {
+                mainCategoryId = category.id;
+            }
         }
 
-        const newPost = await ApiService.Posts.create(title, content, category.id);
+        const newPost = await ApiService.Posts.create(title, content, mainCategoryId);
 
         if (newPost) {
             const postId = String(newPost.id);

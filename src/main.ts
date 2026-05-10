@@ -556,24 +556,6 @@ const getCategoryIdByName = async (name: string): Promise<number> => {
     }
 };
 
-
-async function getOrCreateCategoryId(tagName: string): Promise<number> {
-    try {
-        const categories = await ApiService.Categories.getAll();
-        const existing = categories.find(c => c.name.toLowerCase() === tagName.toLowerCase().trim());
-        
-        if (existing) return existing.id;
-
-        const slug = tagName.toLowerCase().trim().replace(/\s+/g, '-');
-        const newCat = await ApiService.Categories.create(tagName, slug);
-        return newCat.id;
-    } 
-    catch (e) {
-        console.error("Ошибка категорий:", e);
-        return 1;
-    }
-}
-
 (window as any).deletePost = async (id: number) => {
     if (!confirm('Удалить этот пост навсегда?')) return;
 

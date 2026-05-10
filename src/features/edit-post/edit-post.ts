@@ -26,15 +26,31 @@ const convertFileToBase64 = (file: File): Promise<string> => {
     });
 };
 
-async function getOrCreateCategoryId(tagName: string): Promise<number> {
+async function SyncTags(tagsArray: string[]): Promise<number> {
+    if (!tagsArray.length) return 1;
+    
     try {
         const categories = await ApiService.Categories.getAll();
-        const existing = categories.find(c => c.name.toLowerCase() === tagName.toLowerCase().trim());
-        if (existing) return existing.id;
+        let mainCategoryId = 1;
 
-        const slug = tagName.toLowerCase().trim().replace(/\s+/g, '-');
-        const newCat = await ApiService.Categories.create(tagName, slug);
-        return newCat.id;
+        for (let i = 0; i < tagsArray.length; i++) {
+            const tagName = tagsArray[i];
+            const slug = tagName.toLowerCase().replace(/\s+/g, '-');
+            let category = categories.find(c => c.name.toLowerCase() === tagName.toLowerCase());
+            
+            if (!category) {
+                try {
+                    category = await ApiService.Categories.create(tagName, slug);
+                } 
+                catch (err) {
+                    console.warn(`Тег ${tagName} не создан:`, err);
+                }
+            }
+            if (i === 0 && category) {
+                mainCategoryId = category.id;
+            }
+        }
+        return mainCategoryId;
     } 
     catch (e) {
         return 1;
@@ -185,14 +201,15 @@ export function openEditModal(postId: string | number, allPosts: any[], storage:
         }
 
         try {
-        const categoryId = await getOrCreateCategoryId(categoryName);
+        const categoryId = await SyncTags(tagsArray);
 
         await ApiService.Posts.update(Number(postId), title, content, categoryId);
 
         const currentImagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
         if (finalImage) {
             currentImagesMap[postId] = finalImage;
-        } else {
+        } 
+        else {
             delete currentImagesMap[postId];
         }
         storage.set(IMAGES_MAP_KEY, currentImagesMap);
