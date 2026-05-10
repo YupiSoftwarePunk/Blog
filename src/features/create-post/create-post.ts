@@ -16,50 +16,40 @@ export async function handleCreatePost(form: HTMLFormElement, storage: SaveData,
     
     try {
         const categories = await ApiService.Categories.getAll();
-        let mainCategoryId = 1;
-
-        for (let i = 0; i < tagsArray.length; i++) {
-            const tagName = tagsArray[i];
-            const slug = tagName.toLowerCase().replace(/\s+/g, '-');
-            
-            let category = categories.find(c => c.name.toLowerCase() === tagName.toLowerCase());
-
-            if (!category) {
-                try {
-                    category = await ApiService.Categories.create(tagName, slug);
-                } 
-                catch (err) {
-                    console.warn(`Не удалось создать тег ${tagName} на сервере`);
-                }
-            }
-
-            if (i === 0 && category) {
-                mainCategoryId = category.id;
-            }
+        const tagsArray = tagsString.split(',').map(t => t.trim()).filter(t => t);
+        const categoryName = tagsArray[0] || "Общее";
+        
+        let category = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
+        
+        if (!category) {
+            const slug = categoryName.toLowerCase().replace(/\s+/g, '-');
+            category = await ApiService.Categories.create(categoryName, slug);
         }
 
-        const newPost = await ApiService.Posts.create(title, content, mainCategoryId);
+        const newPost = await ApiService.Posts.create(title, content, category.id);
 
-        if (newPost) {
+        if (newPost && newPost.id) {
             const postId = String(newPost.id);
+
+            const currentTagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
+            currentTagsMap[postId] = tagsArray;
+            storage.set(TAGS_MAP_KEY, currentTagsMap);
 
             if (imageFile && imageFile.size > 0) {
                 const reader = new FileReader();
                 reader.onload = () => {
                     const base64Image = reader.result as string;
-                    const imagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
-                    imagesMap[postId] = base64Image;
-                    storage.set(IMAGES_MAP_KEY, imagesMap);
+                    const currentImagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
+                    currentImagesMap[postId] = base64Image;
+                    storage.set(IMAGES_MAP_KEY, currentImagesMap);
+
+                    onSuccess();
                 };
                 reader.readAsDataURL(imageFile);
+            } 
+            else {
+                onSuccess();
             }
-
-            const tagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
-            tagsMap[postId] = tagsArray;
-            storage.set(TAGS_MAP_KEY, tagsMap);
-
-            form.reset();
-            onSuccess();
         }
     }
     catch (error) {
