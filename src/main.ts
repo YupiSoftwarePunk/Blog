@@ -21,7 +21,7 @@ import { initUserManagement, renderUserManagementModal } from './features/manage
 const blogStorage = new SaveData('Blog_');
 
 let refreshAttributes: () => void = () => {};
-let allPosts: any[] = [];
+let allPosts: PostDTO[] = [];
 let currentCommentPostId: number | null = null;
 const POSTS_PER_PAGE = 3; 
 let currentVisibleCount = POSTS_PER_PAGE;
@@ -64,6 +64,8 @@ const saveMetadata = (postId: number, tags: string[], image: string | null) => {
 const savePostsToLocalStorage = () => {
     blogStorage.set('dynamic_posts', allPosts);
 };
+
+(window as any).myLikes = blogStorage.get<number[]>('my_liked_posts') || [];
 
 // const updatePostList = (reset = false) => {
 //     if (reset) {
@@ -462,6 +464,7 @@ const getCategoryIdByName = async (name: string): Promise<number> => {
     try {
         const categories = await ApiService.Categories.getAll();
         const found = categories.find(c => c.name.toLowerCase() === name.toLowerCase().trim());
+        updatePostList();
         return found ? found.id : 1; 
     } 
     catch {
@@ -544,7 +547,6 @@ const getCategoryIdByName = async (name: string): Promise<number> => {
             );
 
             savePostsToLocalStorage();
-
             updatePostList();
         }
 

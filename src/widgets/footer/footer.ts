@@ -1,6 +1,10 @@
 export const renderFooter = (posts: any[]): string => {
     const totalPosts = posts.length;
-    const totalLikes = posts.reduce((sum, post) => sum + (parseInt(post.views) || 0), 0);
+    const totalLikes = posts.reduce((sum, post) => {
+        const likesData = post.likesCount ?? post.likes;
+        const count = Array.isArray(likesData) ? likesData.length : (parseInt(likesData) || 0);
+        return sum + count;
+    }, 0);
     const totalComments = posts.reduce((sum, post) => sum + (post.comments?.length || 0), 0);
 
     const last7Days = [...Array(7)].map((_, i) => {
@@ -14,8 +18,9 @@ export const renderFooter = (posts: any[]): string => {
         const dayStr = dayDate.toDateString();
         
         const count = posts.filter(p => {
-            if (!p.date) return false;
-            const postDate = new Date(p.date);
+            const rawDate = p.date || p.createdAt;
+            if (!rawDate) return false;
+            const postDate = new Date(rawDate);
             return postDate.toDateString() === dayStr;
         }).length;
 
