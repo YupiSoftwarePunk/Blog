@@ -26,25 +26,27 @@ export async function handleCreatePost(form: HTMLFormElement, storage: SaveData,
         const newPost = await ApiService.Posts.create(title, content, category.id);
 
         if (newPost) {
+            const postId = String(newPost.id);
+
             if (imageFile && imageFile.size > 0) {
                 const reader = new FileReader();
                 reader.onload = () => {
                     const base64Image = reader.result as string;
                     const imagesMap = storage.get<Record<string, string>>(IMAGES_MAP_KEY) || {};
-                    imagesMap[newPost.id] = base64Image;
+                    imagesMap[postId] = base64Image;
                     storage.set(IMAGES_MAP_KEY, imagesMap);
                 };
                 reader.readAsDataURL(imageFile);
             }
-            
+
             const tagsMap = storage.get<Record<string, string[]>>(TAGS_MAP_KEY) || {};
-            tagsMap[newPost.id] = tagsArray;
+            tagsMap[postId] = tagsArray;
             storage.set(TAGS_MAP_KEY, tagsMap);
 
             form.reset();
             onSuccess();
         }
-    } 
+    }
     catch (error) {
         console.error('Ошибка при создании поста:', error);
         alert('Не удалось создать пост');

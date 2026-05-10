@@ -16,6 +16,7 @@ import { initSearchLogic, applyHighlighting, getSearchQuery } from './features/p
 import { renderLoginForm } from './features/auth/login-form.ts';
 import { ApiService } from './shared/api/api-service.ts';
 import {createLike} from './features/toggle-like/post-like.ts';
+import { initUserManagement, renderUserManagementModal } from './features/manage-profile/user-management.ts';
 
 const blogStorage = new SaveData('Blog_');
 
@@ -233,6 +234,8 @@ const initApp = () => {
         <footer class="bg-yellow-400 border-t-4 border-black p-4 mt-10 text-center">
             ${renderFooter(allPosts)}
         </footer>
+
+        ${renderUserManagementModal()}
     `;
 
     initFilterLogic(() => allPosts);
@@ -417,6 +420,8 @@ const postModal = document.getElementById('post-modal-overlay')!;
         }
     });
 
+    initUserManagement();
+
     // const form = document.getElementById('create-post-form') as HTMLFormElement;
     // form?.addEventListener('submit', async (e) => {
     //     e.preventDefault();
@@ -597,6 +602,7 @@ async function getOrCreateCategoryId(tagName: string): Promise<number> {
             const serverPosts = await ApiService.Posts.getAll(1, 50);
             allPosts = serverPosts;
             savePostsToLocalStorage();
+            blogStorage.set('dynamic_posts', allPosts);
             (window as any).refreshAppUI();
 
             document.getElementById('post-modal-overlay')?.remove();

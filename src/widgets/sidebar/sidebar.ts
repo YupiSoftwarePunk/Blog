@@ -62,5 +62,12 @@ export const renderSidebar = (): string => {
                 </div>
             </div>
         </div>
+
+        <div class="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+            <h3 class="font-black text-xl uppercase mb-4 italic">Мой профиль</h3>
+            <button id="btn-open-user-modal" type="button" class="w-full bg-blue-400 text-black border-4 border-black p-3 font-black uppercase hover:translate-x-1 hover:translate-y-1 hover:shadow-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
+                Настройки аккаунта
+            </button>
+        </div>
     </aside>`;
 };
