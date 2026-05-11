@@ -47,6 +47,8 @@ const saveImageToLocal = (postId: number, base64: string) => {
 const TAGS_MAP_KEY = 'post_tags_map';
 const IMAGES_MAP_KEY = 'post_images_map';
 
+const LIKES_MAP_KEY = 'post_likes_map';
+
 const getLocalTags = () => blogStorage.get<Record<number, string[]>>(TAGS_MAP_KEY) || {};
 const getLocalImages = () => blogStorage.get<Record<number, string>>(IMAGES_MAP_KEY) || {};
 
@@ -66,29 +68,6 @@ const savePostsToLocalStorage = () => {
 };
 
 (window as any).myLikes = blogStorage.get<number[]>('my_liked_posts') || [];
-
-// const updatePostList = (reset = false) => {
-//     if (reset) {
-//         currentVisibleCount = POSTS_PER_PAGE;
-//     }
-
-//     const listElement = document.getElementById('post-list');
-//     if (listElement) {
-//         const visiblePosts = allPosts.slice(0, currentVisibleCount);
-//         listElement.innerHTML = visiblePosts.map(post => renderPostCard(post)).join('');
-        
-//         updateTagCloud(allPosts);
-//         applyFilters();
-//         applyHighlighting();
-//         refreshAttributes(); 
-//         syncFormatting();
-
-//         const observerTarget = document.getElementById('observer-target');
-//         if (observerTarget) {
-//             observerTarget.style.display = currentVisibleCount >= allPosts.length ? 'none' : 'flex';
-//         }
-//     }
-// };
 
 let myLikes: number[] = blogStorage.get<number[]>('my_liked_posts') || [];
 (window as any).myLikes = blogStorage.get<number[]>('my_liked_posts') || [];
@@ -423,33 +402,6 @@ const postModal = document.getElementById('post-modal-overlay')!;
     });
 
     initUserManagement();
-
-    // const form = document.getElementById('create-post-form') as HTMLFormElement;
-    // form?.addEventListener('submit', async (e) => {
-    //     e.preventDefault();
-    //     const formData = new FormData(form);
-
-    //     const imageInput = form.querySelector('input[name="imageFile"]') as HTMLInputElement;
-    //     let finalImage = (formData.get('imageLink') as string) || null;
-
-    //     if (imageInput.files?.[0]) {
-    //         finalImage = await convertFileToBase64(imageInput.files[0]);
-    //     }
-
-    //     const newPostInstance = new Post(
-    //         formData.get('title') as string,
-    //         formData.get('content') as string,
-    //         'user_95',
-    //         (formData.get('tags') as string || '').split(',').map(t => t.trim()).filter(t => t),
-    //         finalImage
-    //     );
-
-    //     allPosts.unshift(newPostInstance.createNewPost());
-    //     savePostsToLocalStorage();
-    //     updatePostList(true);
-    //     toggleModal(false);
-    //     form.reset();
-    // });
 };
 
 const convertFileToBase64 = (file: File): Promise<string> => {
@@ -482,32 +434,45 @@ const getCategoryIdByName = async (name: string): Promise<number> => {
 
 (window as any).likePost = async (id: number) => {
     try {
-        const newCountStr = await ApiService.Posts.toggleLike(id);
-        const newCount = parseInt(newCountStr);
+        const response = await ApiService.Posts.toggleLike(id);
+        const newCount = parseInt(response);
 
-        let myLikes = (window as any).myLikes;
-        if (myLikes.includes(id)) {
+        let myLikes = (window as any).myLikes || [];
+        const isLikedBefore = myLikes.includes(id);
+
+        if (isLikedBefore) {
             myLikes = myLikes.filter((itemId: number) => itemId !== id);
-        }
+        } 
         else {
             myLikes.push(id);
         }
+
         (window as any).myLikes = myLikes;
         blogStorage.set('my_liked_posts', myLikes);
 
-        const btn = document.getElementById(`like-btn-${id}`);
-        const counter = document.getElementById(`likes-${id}`);
-        
-        if (btn) {
+        const postIndex = allPosts.findIndex(p => p.id === id);
+        if (postIndex !== -1) {
+            allPosts[postIndex].likesCount = newCount;
+            savePostsToLocalStorage();
+            blogStorage.set('dynamic_posts', allPosts);
+        }
+
+        const container = document.getElementById(`like-container-${id}`);
+        const counter = document.getElementById(`likes-count-${id}`);
+        const heartIcon = container?.querySelector('.heart-icon');
+
+        if (heartIcon) {
             const isNowLiked = myLikes.includes(id);
+            heartIcon.setAttribute('fill', isNowLiked ? '#ff0000' : 'none');
         }
 
         if (counter) {
             counter.innerText = newCount.toString();
         }
 
-        (window as any).updateGlobalPostState(id, { likesCount: newCount });
-
+        if ((window as any).refreshAppUI) {
+            (window as any).refreshAppUI();
+        }
     } 
     catch (error) {
         alert("Не удалось поставить лайк. Вы вошли в систему?");
