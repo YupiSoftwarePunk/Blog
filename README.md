@@ -113,20 +113,20 @@ npm run dev
 
 ### Вход/Регистрация
 
-<img src="public/8.png" alt="stats" width="500" height="300">
+<img src="public/8.png" alt="stats" width="500" height="200">
 
-<img src="public/7.png" alt="stats" width="500" height="300">
+<img src="public/7.png" alt="stats" width="500" height="200">
 
 ### Создание поста
 
-<img src="public/9.png" alt="stats" width="500" height="300">
+<img src="public/9.png" alt="stats" width="550" height="250">
 
 ### Редактирование поста
 
-<img src="public/10.png" alt="stats" width="500" height="300">
+<img src="public/10.png" alt="stats" width="500" height="450">
 
 ### Просмотр профиля
 
-<img src="public/13.png" alt="stats" width="500" height="300">
+<img src="public/13.png" alt="stats" width="500" height="200">
 
-<img src="public/12.png" alt="stats" width="500" height="300">
+<img src="public/12.png" alt="stats" width="500" height="200">
