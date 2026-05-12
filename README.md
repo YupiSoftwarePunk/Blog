@@ -95,3 +95,38 @@ npm run dev
 * **Гибридное хранение:** Поскольку серверный API ограничен, изображения сохраняются в `LocalStorage` в формате Base64 и привязываются к ID поста, полученному от ASP.NET..
 * **Infinite Scroll:** Реализован через `IntersectionObserver` для подгрузки постов порциями по 3 штуки..
 * **Neo-Brutalism UI:** Стилизация реализована полностью на Tailwind CSS с использованием кастомных теней и жестких границ..
+
+---
+
+## UI
+
+###  Главная страница
+<img src="public/1.png" alt="main page1" width="500" height="300">
+
+<img src="public/2.png" alt="main page1" width="500" height="300">
+
+<img src="public/5.png" alt="main page1" width="500" height="300">
+
+### Статистика на главной странице в футере
+
+<img src="public/6.png" alt="stats" width="500" height="300">
+
+### Вход/Регистрация
+
+<img src="public/8.png" alt="stats" width="500" height="300">
+
+<img src="public/7.png" alt="stats" width="500" height="300">
+
+### Создание поста
+
+<img src="public/9.png" alt="stats" width="500" height="300">
+
+### Редактирование поста
+
+<img src="public/10.png" alt="stats" width="500" height="300">
+
+### Просмотр профиля
+
+<img src="public/13.png" alt="stats" width="500" height="300">
+
+<img src="public/12.png" alt="stats" width="500" height="300">
